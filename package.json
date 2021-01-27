@@ -131,8 +131,8 @@
     }
   },
   "bin": {
-    "vtkDataConverter": "./Utilities/DataGenerator/convert-cli.js",
-    "xml2json": "./Utilities/XMLConverter/xml2json-cli.js"
+    "vtkDataConverter": "Utilities/DataGenerator/convert-cli.js",
+    "xml2json": "Utilities/XMLConverter/xml2json-cli.js"
   },
   "nyc": {
     "include": [

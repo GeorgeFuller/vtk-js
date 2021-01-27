@@ -1,4 +1,4 @@
-import vtkColorMaps from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction/ColorMaps.json';
+import vtkColorMaps from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction/Tirt_CTIX_ColorMaps.json';
 
 const presetMap = Object.create(null);
 
