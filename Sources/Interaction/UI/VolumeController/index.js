@@ -106,7 +106,7 @@ function vtkVolumeController(publicAPI, model) {
     actor,
     isBackgroundDark,
     useShadow = '1',
-    presetName = 'erdc_rainbow_bright'
+    presetName = 'TIRTCT_Composite'
   ) => {
     publicAPI.setActor(actor);
     publicAPI.setRenderWindow(renderWindow);

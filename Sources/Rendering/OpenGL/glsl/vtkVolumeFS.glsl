@@ -206,7 +206,7 @@ vec4 getTextureValue(vec3 pos)
 #if vtkNumComponents == 3
   tmp.a = length(tmp.rgb);
 #endif
-  return tmp;
+  return tmp; 
 }
 
 //=======================================================================
@@ -854,9 +854,97 @@ void applyBlend(vec3 posIS, vec3 endIS, float sampleDistanceIS, vec3 tdims)
       stepsTraveled++;
     }
 
-    sum /= vec4(stepsTraveled, stepsTraveled, stepsTraveled, 1.0);
+    sum /= vec4(stepsTraveled/40.0, stepsTraveled/40.0, stepsTraveled/40.0, 1.0);
 
     gl_FragData[0] = getColorForValue(sum, posIS, tstep);
+  #endif
+  #if vtkBlendMode == 4
+    // vec4 averageIPScalarRangeMin = vec4 (
+    //   //VTK::AverageIPScalarRangeMin,
+    //   //VTK::AverageIPScalarRangeMin,
+    //   //VTK::AverageIPScalarRangeMin,
+    //   1.0);
+    // vec4 averageIPScalarRangeMax = vec4(
+    //   //VTK::AverageIPScalarRangeMax,
+    //   //VTK::AverageIPScalarRangeMax,
+    //   //VTK::AverageIPScalarRangeMax,
+    //   1.0);
+
+    vec4 sum = vec4(0.);
+
+    // averageIPScalarRangeMin.a = tValue.a;
+    // averageIPScalarRangeMax.a = tValue.a;
+
+    // if (all(greaterThanEqual(tValue, averageIPScalarRangeMin)) &&
+    // all(lessThanEqual(tValue, averageIPScalarRangeMax))) {
+      sum += tValue;
+    // }
+
+    if (raySteps <= 1.0) {
+      gl_FragData[0] = getColorForValue(sum, posIS, tstep);
+      return;
+    }
+
+    posIS += (jitter*stepIS);
+
+    // Sample along the ray until MaximumSamplesValue,
+    // ending slightly inside the total distance
+    for (int i = 0; i < //VTK::MaximumSamplesValue ; ++i)
+    {
+      // If we have reached the last step, break
+      if (stepsTraveled + 1.0 >= raySteps) { break; }
+
+      // compute the scalar
+      tValue = getTextureValue(posIS);
+
+      // One can control the scalar range by setting the AverageIPScalarRange to disregard scalar values, not in the range of interest, from the average computation.
+      // Notes:
+      // - We are comparing all values in the texture to see if any of them
+      //   are outside of the scalar range. In the future we might want to allow
+      //   scalar ranges for each component.
+      // - We are setting the alpha channel for averageIPScalarRangeMin and
+      //   averageIPScalarRangeMax so that we do not trigger this 'continue'
+      //   based on the alpha channel comparison.
+      // - There might be a better way to do this. I'm not sure if there is an
+      //   equivalent of 'any' which only operates on RGB, though I suppose
+      //   we could write an 'anyRGB' function and see if that is faster.
+      // averageIPScalarRangeMin.a = tValue.a;
+      // averageIPScalarRangeMax.a = tValue.a;
+      // if (any(lessThan(tValue, averageIPScalarRangeMin)) ||
+      //     any(greaterThan(tValue, averageIPScalarRangeMax))) {
+      //   continue;
+      // }
+
+      // Sum the values across each step in the path
+      sum += tValue;
+
+      // Otherwise, continue along the ray
+      stepsTraveled++;
+      posIS += stepIS;
+    }
+
+    // Perform the last step along the ray using the
+    // residual distance
+    posIS = endIS;
+
+    // compute the scalar
+    tValue = getTextureValue(posIS);
+
+    // One can control the scalar range by setting the AverageIPScalarRange to disregard scalar values, not in the range of interest, from the average computation
+    // if (all(greaterThanEqual(tValue, averageIPScalarRangeMin)) &&
+    //     all(lessThanEqual(tValue, averageIPScalarRangeMax))) {
+      sum += tValue;
+
+      stepsTraveled++;
+    // }
+
+    sum /= vec4(10, 10, 10, 1.0);
+
+    gl_FragData[0] = getColorForValue(sum, posIS, tstep);
+  #endif
+  #if vtkBlendMode == 5
+    vec4 sum = vec4(0.);
+    gl_FragData[0] = vec4(sampleDistanceIS,sampleDistanceIS,sampleDistanceIS,1);
   #endif
 }
 
