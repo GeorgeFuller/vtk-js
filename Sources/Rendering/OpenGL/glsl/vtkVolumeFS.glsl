@@ -938,13 +938,9 @@ void applyBlend(vec3 posIS, vec3 endIS, float sampleDistanceIS, vec3 tdims)
       stepsTraveled++;
     // }
 
-    sum /= vec4(10, 10, 10, 1.0);
+    sum /= vec4(10, 10, 10, 1.0); // Divide by 10, this is a hack to put the values in a similar range to the other blend modes
 
     gl_FragData[0] = getColorForValue(sum, posIS, tstep);
-  #endif
-  #if vtkBlendMode == 5
-    vec4 sum = vec4(0.);
-    gl_FragData[0] = vec4(sampleDistanceIS,sampleDistanceIS,sampleDistanceIS,1);
   #endif
 }
 
