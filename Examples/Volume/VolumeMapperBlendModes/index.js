@@ -75,7 +75,7 @@ function updateBlendMode(event) {
   mapper.setAverageIPScalarRange(0.0, 1.0);
 
   // if average blend mode
-  if (blendMode === 3) {
+  if (blendMode === 3 || blendMode === 4) {
     // Show average scalar ui
     for (let i = 0; i < averageIPScalarEls.length; i += 1) {
       const el = averageIPScalarEls[i];
