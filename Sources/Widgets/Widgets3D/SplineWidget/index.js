@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkAbstractWidgetFactory from 'vtk.js/Sources/Widgets/Core/AbstractWidgetFactory';
 import vtkPlanePointManipulator from 'vtk.js/Sources/Widgets/Manipulators/PlaneManipulator';
 import vtkSplineContextRepresentation from 'vtk.js/Sources/Widgets/Representations/SplineContextRepresentation';
@@ -16,16 +16,19 @@ import { ViewTypes } from 'vtk.js/Sources/Widgets/Core/WidgetManager/Constants';
 function vtkSplineWidget(publicAPI, model) {
   model.classHierarchy.push('vtkSplineWidget');
 
+  const superClass = { ...publicAPI };
+
   // --- Widget Requirement ---------------------------------------------------
 
   model.methodsToLink = [
+    'boundaryCondition',
+    'close',
     'outputBorder',
     'fill',
     'borderColor',
     'errorBorderColor',
+    'scaleInPixels',
   ];
-  model.behavior = widgetBehavior;
-  model.widgetState = stateGenerator();
 
   publicAPI.getRepresentationsForViewType = (viewType) => {
     switch (viewType) {
@@ -47,30 +50,46 @@ function vtkSplineWidget(publicAPI, model) {
     }
   };
 
+  // --- Public methods -------------------------------------------------------
+  publicAPI.setManipulator = (manipulator) => {
+    superClass.setManipulator(manipulator);
+    model.widgetState.getMoveHandle().setManipulator(manipulator);
+    model.widgetState.getHandleList().forEach((handle) => {
+      handle.setManipulator(manipulator);
+    });
+  };
+
   // --------------------------------------------------------------------------
   // initialization
   // --------------------------------------------------------------------------
 
-  model.moveHandle = model.widgetState.getMoveHandle();
   // Default manipulator
-  model.manipulator = vtkPlanePointManipulator.newInstance();
+  publicAPI.setManipulator(
+    model.manipulator ||
+      model.manipulator ||
+      vtkPlanePointManipulator.newInstance({ useCameraNormal: true })
+  );
 }
 
 // ----------------------------------------------------------------------------
 
-const DEFAULT_VALUES = {
-  keysDown: {},
+const defaultValues = (initialValues) => ({
+  // manipulator: null,
   freehandMinDistance: 0.1,
   allowFreehand: true,
-  resolution: 32,
+  resolution: 32, // propagates to SplineContextRepresentation
   defaultCursor: 'pointer',
-  handleSizeInPixels: 10,
-};
+  handleSizeInPixels: 10, // propagates to SplineContextRepresentation
+  resetAfterPointPlacement: false,
+  behavior: widgetBehavior,
+  widgetState: stateGenerator(),
+  ...initialValues,
+});
 
 // ----------------------------------------------------------------------------
 
 export function extend(publicAPI, model, initialValues = {}) {
-  Object.assign(model, DEFAULT_VALUES, initialValues);
+  Object.assign(model, defaultValues(initialValues));
 
   vtkAbstractWidgetFactory.extend(publicAPI, model, initialValues);
   macro.setGet(publicAPI, model, [
@@ -80,6 +99,7 @@ export function extend(publicAPI, model, initialValues = {}) {
     'resolution',
     'defaultCursor',
     'handleSizeInPixels',
+    'resetAfterPointPlacement',
   ]);
 
   vtkSplineWidget(publicAPI, model);

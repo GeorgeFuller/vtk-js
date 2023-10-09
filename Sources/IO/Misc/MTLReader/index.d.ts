@@ -1,6 +1,10 @@
 import { vtkObject, vtkSubscription } from "../../../interfaces";
 
 import vtkActor from "../../../Rendering/Core/Actor";
+import HtmlDataAccessHelper from "../../Core/DataAccessHelper/HtmlDataAccessHelper";
+import HttpDataAccessHelper from "../../Core/DataAccessHelper/HttpDataAccessHelper";
+import JSZipDataAccessHelper from "../../Core/DataAccessHelper/JSZipDataAccessHelper";
+import LiteHttpDataAccessHelper from "../../Core/DataAccessHelper/LiteHttpDataAccessHelper";
 
 
 interface IMTLReaderOptions {
@@ -12,7 +16,7 @@ interface IMTLReaderOptions {
 /**
  * 
  */
-interface IMTLReaderInitialValues {
+export interface IMTLReaderInitialValues {
 	numberOfOutputs?: number;
 	requestCount?: number;
 	materials?: object;
@@ -21,7 +25,13 @@ interface IMTLReaderInitialValues {
 
 export interface vtkMTLReader extends vtkObject {
 
+	/**
+	 * 
+	 * @param {String} name 
+	 * @param {vtkActor} actor 
+	 */
 	applyMaterialToActor(name: string, actor: vtkActor): void;
+
 	/**
 	 * 
 	 */
@@ -30,7 +40,7 @@ export interface vtkMTLReader extends vtkObject {
 	/**
 	 * 
 	 */
-	getDataAccessHelper(): any;
+	getDataAccessHelper(): HtmlDataAccessHelper | HttpDataAccessHelper | JSZipDataAccessHelper | LiteHttpDataAccessHelper;
 
 	/**
 	 * 
@@ -39,6 +49,7 @@ export interface vtkMTLReader extends vtkObject {
 
 	/**
 	 * 
+	 * @param {String} name The name of the material.
 	 */
 	getMaterial(name: string): object;
 
@@ -81,9 +92,9 @@ export interface vtkMTLReader extends vtkObject {
 
 	/**
 	 * 
-	 * @param busy 
+	 * @param callback 
 	 */
-	onBusy(busy: boolean): vtkSubscription;
+	onBusy(callback: (busy: boolean) => any): vtkSubscription;
 
 	/**
 	 * Parse data as text.
@@ -101,7 +112,7 @@ export interface vtkMTLReader extends vtkObject {
 	 * 
 	 * @param dataAccessHelper 
 	 */
-	setDataAccessHelper(dataAccessHelper: any): boolean;
+	setDataAccessHelper(dataAccessHelper: HtmlDataAccessHelper | HttpDataAccessHelper | JSZipDataAccessHelper | LiteHttpDataAccessHelper): boolean;
 
 	/**
 	 * 
@@ -127,7 +138,7 @@ export interface vtkMTLReader extends vtkObject {
 	 * @param {String} url the url of the object to load.
 	 * @param {IMTLReaderOptions} [option] The MTL reader options.
 	 */
-	setUrl(url: string, option?: IMTLReaderOptions): boolean;
+	setUrl(url: string, option?: IMTLReaderOptions): Promise<string>;
 }
 
 /**

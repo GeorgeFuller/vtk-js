@@ -1,32 +1,44 @@
-import vtkMapper from "../Mapper";
+import vtkMapper, { IMapperInitialValues } from "../Mapper";
 
-interface ISphereInitialValues {
-    radius?: number;
+export interface ISphereInitialValues extends IMapperInitialValues {
+	radius?: number;
 }
 
 export interface vtkSphereMapper extends vtkMapper {
 
-    /**
-     * 
-     */
-    getRadius(): number;
+	/**
+	 * 
+	 */
+	getRadius(): number;
 
-    /**
-     * 
-     */
-    getScaleArray(): any;
+	/**
+	 * 
+	 */
+	getScaleArray(): any;
 
-    /**
-     * 
-     * @param {Number} radius 
-     */
-    setRaduis(radius: number): boolean;
+	/**
+	 * 
+	 */
+	getScaleFactor(): number;
 
-    /**
-     * 
-     * @param scaleArray 
-     */
-    setScaleArray(scaleArray: any): boolean;
+	/**
+	 * 
+	 * @param {Number} radius 
+	 */
+	setRadius(radius: number): boolean;
+
+	/**
+	 * 
+	 * @param scaleArray 
+	 */
+	setScaleArray(scaleArray: any): boolean;
+
+/**
+	 * Factor multiplied with scale array elements. Radius is used when no scale array is given.
+	 * @param scaleFactor number to multiply with when a scale array is provided. 1 by default.
+	 * @see getScaleFactor(), setScaleArray(), setRadius()
+	 */ 
+	setScaleFactor(scaleFactor: number): boolean;
 }
 
 /**
@@ -47,7 +59,7 @@ export interface vtkSphereMapper extends vtkMapper {
   * vtkSphereMapper inherits from vtkMapper.
   */
  export declare const vtkSphereMapper: {
-     newInstance: typeof newInstance,
-     extend: typeof extend,
+	 newInstance: typeof newInstance,
+	 extend: typeof extend,
  };
  export default vtkSphereMapper;

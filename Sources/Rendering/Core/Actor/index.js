@@ -1,5 +1,5 @@
 import { vec3, mat4 } from 'gl-matrix';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkBoundingBox from 'vtk.js/Sources/Common/DataModel/BoundingBox';
 import vtkProp3D from 'vtk.js/Sources/Rendering/Core/Prop3D';
 import vtkProperty from 'vtk.js/Sources/Rendering/Core/Property';
@@ -17,7 +17,7 @@ function vtkActor(publicAPI, model) {
   // Capture 'parentClass' api for internal use
   const superClass = { ...publicAPI };
 
-  publicAPI.getActors = () => publicAPI;
+  publicAPI.getActors = () => [publicAPI];
 
   publicAPI.getIsOpaque = () => {
     if (model.forceOpaque) {
@@ -158,6 +158,12 @@ function vtkActor(publicAPI, model) {
 
   publicAPI.getSupportsSelection = () =>
     model.mapper ? model.mapper.getSupportsSelection() : false;
+
+  publicAPI.processSelectorPixelBuffers = (selector, pixelOffsets) => {
+    if (model.mapper && model.mapper.processSelectorPixelBuffers) {
+      model.mapper.processSelectorPixelBuffers(selector, pixelOffsets);
+    }
+  };
 }
 
 // ----------------------------------------------------------------------------

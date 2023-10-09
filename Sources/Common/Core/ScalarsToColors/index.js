@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import Constants from 'vtk.js/Sources/Common/Core/ScalarsToColors/Constants';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper/Constants'; // Need to go inside Constants otherwise dependency loop
@@ -351,8 +351,16 @@ function vtkScalarsToColors(publicAPI, model) {
         break;
       }
 
-      default:
-      case VectorMode.MAGNITUDE: {
+      case VectorMode.RGBCOLORS: {
+        // publicAPI.mapColorsToColors(
+        //   input, output, inComponents, vectorSize,
+        //   outputFormat);
+        break;
+      }
+
+      // MAGNITUDE is considered default
+      case VectorMode.MAGNITUDE:
+      default: {
         const magValues = vtkDataArray.newInstance({
           numberOfComponents: 1,
           values: new Float32Array(input.getNumberOfTuples()),
@@ -360,13 +368,6 @@ function vtkScalarsToColors(publicAPI, model) {
 
         publicAPI.mapVectorsToMagnitude(input, magValues, vectorSize);
         publicAPI.mapScalarsThroughTable(magValues, output, outputFormat, 0);
-        break;
-      }
-
-      case VectorMode.RGBCOLORS: {
-        // publicAPI.mapColorsToColors(
-        //   input, output, inComponents, vectorSize,
-        //   outputFormat);
         break;
       }
     }
@@ -509,7 +510,33 @@ function vtkScalarsToColors(publicAPI, model) {
   publicAPI.getNumberOfAvailableColors = () => 256 * 256 * 256;
 
   publicAPI.setRange = (min, max) => publicAPI.setMappingRange(min, max);
-  publicAPI.getRange = (min, max) => publicAPI.getMappingRange();
+  publicAPI.getRange = () => publicAPI.getMappingRange();
+
+  publicAPI.areScalarsOpaque = (scalars, colorMode, componentIn) => {
+    if (!scalars) {
+      return publicAPI.isOpaque();
+    }
+
+    const numberOfComponents = scalars.getNumberOfComponents();
+
+    // map scalars through lookup table only if needed
+    if (
+      (colorMode === ColorMode.DEFAULT &&
+        scalars.getDataType() === VtkDataTypes.UNSIGNED_CHAR) ||
+      colorMode === ColorMode.DIRECT_SCALARS
+    ) {
+      // we will be using the scalars directly, so look at the number of
+      // components and the range
+      if (numberOfComponents === 3 || numberOfComponents === 1) {
+        return model.alpha >= 1.0;
+      }
+      // otherwise look at the range of the alpha channel
+      const range = scalars.getRange(numberOfComponents - 1);
+      return range[0] === 255;
+    }
+
+    return true;
+  };
 }
 
 // ----------------------------------------------------------------------------
@@ -554,7 +581,7 @@ export function extend(publicAPI, model, initialValues = {}) {
   // Create get macros for array
   macro.getArray(publicAPI, model, ['mappingRange']);
 
-  // For more macro methods, see "Sources/macro.js"
+  // For more macro methods, see "Sources/macros.js"
 
   // Object specific methods
   vtkScalarsToColors(publicAPI, model);

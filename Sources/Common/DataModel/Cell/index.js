@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
 import vtkPoints from 'vtk.js/Sources/Common/Core/Points';
 
@@ -113,7 +113,9 @@ function vtkCell(publicAPI, model) {
     pcoords,
     dist2,
     weights
-  ) => {}; // virtual
+  ) => {
+    macro.vtkErrorMacro('vtkCell.evaluatePosition is not implemented.');
+  }; // virtual
 }
 
 // ----------------------------------------------------------------------------

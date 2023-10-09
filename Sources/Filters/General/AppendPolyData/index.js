@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkPoints from 'vtk.js/Sources/Common/Core/Points';
 import vtkPolyData from 'vtk.js/Sources/Common/DataModel/PolyData';
@@ -65,8 +65,8 @@ function vtkAppendPolyData(publicAPI, model) {
     for (let i = 0; i < numberOfInputs; i++) {
       const ds = inData[i];
       if (!ds) {
-        vtkErrorMacro('Invalid or missing input');
-        return;
+        // eslint-disable-next-line
+        continue;
       }
       const dsNumPts = ds.getPoints().getNumberOfPoints();
       numPts += dsNumPts;

@@ -1,6 +1,7 @@
 const path = require('path');
 
-const vtkBasePath = path.resolve('.');
+const umdVtkBasePath = path.resolve('.');
+const esmVtkBasePath = path.resolve('./Sources');
 
 const settings = require('../../webpack.settings.js');
 
@@ -12,8 +13,9 @@ module.exports = function buildConfig(
   exampleBasePath
 ) {
   return `
-var rules = [].concat(require('../config/rules-vtk.js'), require('../config/rules-examples.js'), require('../config/rules-linter.js'));
+var rules = [].concat(require('../config/rules-vtk.js'), require('../config/rules-examples.js'));
 var HtmlWebpackPlugin = require('html-webpack-plugin');
+var ESLintPlugin = require('eslint-webpack-plugin');
 var webpack = require('webpack');
 var path = require('path');
 
@@ -21,6 +23,7 @@ module.exports = {
   mode: 'development',
   devtool: 'inline-source-map',
   plugins: [
+    new ESLintPlugin(),
     new HtmlWebpackPlugin({
       template: '${root.replace(
         /\\/g,
@@ -44,7 +47,8 @@ module.exports = {
   },
   resolve: {
     alias: {
-      'vtk.js': '${vtkBasePath.replace(/\\/g, '\\\\')}',
+      'vtk.js': '${umdVtkBasePath.replace(/\\/g, '\\\\')}',
+      '@kitware/vtk.js': '${esmVtkBasePath.replace(/\\/g, '\\\\')}',
     },
     fallback: {
       fs: false,
@@ -53,15 +57,17 @@ module.exports = {
   },
 
   devServer: {
-    contentBase: '${root.replace(/\\/g, '\\\\')}',
+    static: {
+      directory: '${root.replace(/\\/g, '\\\\')}',
+    },
     port: ${settings.devServerConfig.port()},
     host: '${settings.devServerConfig.host()}',
-    disableHostCheck: true,
+    allowedHosts: 'all',
     hot: false,
-    quiet: false,
-    noInfo: false,
-    stats: {
-      colors: true,
+    devMiddleware: {
+      stats: {
+        colors: true,
+      },
     },
     proxy: {
       '/data/**': {

@@ -1,13 +1,48 @@
 module.exports = [
-  { test: /canvas.node/, loader: 'ignore-loader' },
   { test: /\.cjson$/, loader: 'hson-loader' },
-  { test: /test[^\.]*\.(png|jpg)$/, use: 'url-loader?limit=1048576' },
+  {
+    test: /test[^\.]*\.(png|jpg)$/,
+    type: 'asset',
+    parser: {
+      dataUrlCondition: {
+        maxSize: 1024 * 1024,
+      },
+    },
+  },
   { test: /\.glsl$/i, loader: 'shader-loader' },
   {
     test: /\.worker\.js$/,
     use: [
       { loader: 'worker-loader', options: { inline: 'no-fallback' } },
     ],
+  },
+  {
+    test: /\.css$/,
+    exclude: /\.module\.css$/,
+    use: [
+      { loader: 'style-loader' },
+      { loader: 'css-loader' },
+      { loader: 'postcss-loader' },
+    ],
+  },
+  {
+    test: /\.module\.css$/,
+    use: [
+      { loader: 'style-loader' },
+      {
+        loader: 'css-loader',
+        options: {
+          modules: {
+            localIdentName: '[name]-[local]_[sha512:hash:base64:5]',
+          },
+        },
+      },
+      { loader: 'postcss-loader' },
+    ],
+  },
+  {
+    test: /\.svg$/,
+    type: 'asset/source',
   },
   {
     test: /\.js$/,

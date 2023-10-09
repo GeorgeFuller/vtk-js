@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkBoundingBox from 'vtk.js/Sources/Common/DataModel/BoundingBox';
 import vtkCompositeKeyboardManipulator from 'vtk.js/Sources/Interaction/Manipulators/CompositeKeyboardManipulator';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
@@ -96,7 +96,7 @@ function vtkKeyboardCameraManipulator(publicAPI, model) {
       internal.animationSub = null;
     }
 
-    model.interactor.cancelAnimation(ANIMATION_REQUESTER);
+    model._interactor.cancelAnimation(ANIMATION_REQUESTER);
 
     if (internal.cameraModifiedSub) {
       internal.cameraModifiedSub.unsubscribe();

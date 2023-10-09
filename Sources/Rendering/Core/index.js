@@ -19,11 +19,13 @@ import vtkGlyph3DMapper from './Glyph3DMapper';
 import vtkHardwareSelector from './HardwareSelector';
 import vtkImageMapper from './ImageMapper';
 import vtkImageProperty from './ImageProperty';
+import vtkImageResliceMapper from './ImageResliceMapper';
 import vtkImageSlice from './ImageSlice';
 import vtkInteractorObserver from './InteractorObserver';
 import vtkInteractorStyle from './InteractorStyle';
 import vtkLight from './Light';
 import vtkMapper from './Mapper';
+import vtkMapper2D from './Mapper2D';
 import vtkPicker from './Picker';
 import vtkPixelSpaceCallbackMapper from './PixelSpaceCallbackMapper';
 import vtkPointPicker from './PointPicker';
@@ -34,6 +36,7 @@ import vtkProperty2D from './Property2D';
 import vtkRenderer from './Renderer';
 import vtkRenderWindow from './RenderWindow';
 import vtkRenderWindowInteractor from './RenderWindowInteractor';
+import vtkScalarBarActor from './ScalarBarActor';
 import vtkSkybox from './Skybox';
 import vtkSphereMapper from './SphereMapper';
 import vtkStickMapper from './StickMapper';
@@ -61,11 +64,13 @@ export default {
   vtkHardwareSelector,
   vtkImageMapper,
   vtkImageProperty,
+  vtkImageResliceMapper,
   vtkImageSlice,
   vtkInteractorObserver,
   vtkInteractorStyle,
   vtkLight,
   vtkMapper,
+  vtkMapper2D,
   vtkPicker,
   vtkPixelSpaceCallbackMapper,
   vtkPointPicker,
@@ -76,6 +81,7 @@ export default {
   vtkRenderer,
   vtkRenderWindow,
   vtkRenderWindowInteractor,
+  vtkScalarBarActor,
   vtkSkybox,
   vtkSphereMapper,
   vtkStickMapper,

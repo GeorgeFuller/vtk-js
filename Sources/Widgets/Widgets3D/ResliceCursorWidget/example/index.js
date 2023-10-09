@@ -1,39 +1,36 @@
-import 'vtk.js/Sources/favicon';
+import '@kitware/vtk.js/favicon';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import 'vtk.js/Sources/Rendering/Profiles/All';
+import '@kitware/vtk.js/Rendering/Profiles/All';
 
-import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
-import vtkAnnotatedCubeActor from 'vtk.js/Sources/Rendering/Core/AnnotatedCubeActor';
-import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
-import vtkHttpDataSetReader from 'vtk.js/Sources/IO/Core/HttpDataSetReader';
-import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
-import vtkImageMapper from 'vtk.js/Sources/Rendering/Core/ImageMapper';
-import vtkImageReslice from 'vtk.js/Sources/Imaging/Core/ImageReslice';
-import vtkImageSlice from 'vtk.js/Sources/Rendering/Core/ImageSlice';
-import vtkInteractorStyleImage from 'vtk.js/Sources/Interaction/Style/InteractorStyleImage';
-import vtkInteractorStyleTrackballCamera from 'vtk.js/Sources/Interaction/Style/InteractorStyleTrackballCamera';
-import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
-import vtkOutlineFilter from 'vtk.js/Sources/Filters/General/OutlineFilter';
-import vtkOpenGLRenderWindow from 'vtk.js/Sources/Rendering/OpenGL/RenderWindow';
-import vtkOrientationMarkerWidget from 'vtk.js/Sources/Interaction/Widgets/OrientationMarkerWidget';
-import vtkRenderer from 'vtk.js/Sources/Rendering/Core/Renderer';
-import vtkRenderWindow from 'vtk.js/Sources/Rendering/Core/RenderWindow';
-import vtkRenderWindowInteractor from 'vtk.js/Sources/Rendering/Core/RenderWindowInteractor';
-import vtkResliceCursorWidget from 'vtk.js/Sources/Widgets/Widgets3D/ResliceCursorWidget';
-import vtkWidgetManager from 'vtk.js/Sources/Widgets/Core/WidgetManager';
+import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
+import vtkAnnotatedCubeActor from '@kitware/vtk.js/Rendering/Core/AnnotatedCubeActor';
+import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
+import vtkHttpDataSetReader from '@kitware/vtk.js/IO/Core/HttpDataSetReader';
+import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
+import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
+import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
+import vtkImageReslice from '@kitware/vtk.js/Imaging/Core/ImageReslice';
+import vtkImageSlice from '@kitware/vtk.js/Rendering/Core/ImageSlice';
+import vtkInteractorStyleImage from '@kitware/vtk.js/Interaction/Style/InteractorStyleImage';
+import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
+import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+import vtkOutlineFilter from '@kitware/vtk.js/Filters/General/OutlineFilter';
+import vtkOrientationMarkerWidget from '@kitware/vtk.js/Interaction/Widgets/OrientationMarkerWidget';
+import vtkResliceCursorWidget from '@kitware/vtk.js/Widgets/Widgets3D/ResliceCursorWidget';
+import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
 
-import vtkSphereSource from 'vtk.js/Sources/Filters/Sources/SphereSource';
-import { CaptureOn } from 'vtk.js/Sources/Widgets/Core/WidgetManager/Constants';
+import vtkSphereSource from '@kitware/vtk.js/Filters/Sources/SphereSource';
+import { CaptureOn } from '@kitware/vtk.js/Widgets/Core/WidgetManager/Constants';
 
 import { vec3 } from 'gl-matrix';
-import { SlabMode } from 'vtk.js/Sources/Imaging/Core/ImageReslice/Constants';
+import { SlabMode } from '@kitware/vtk.js/Imaging/Core/ImageReslice/Constants';
 
-import { xyzToViewType } from 'vtk.js/Sources/Widgets/Widgets3D/ResliceCursorWidget/Constants';
+import { xyzToViewType } from '@kitware/vtk.js/Widgets/Widgets3D/ResliceCursorWidget/Constants';
 import controlPanel from './controlPanel.html';
 
 // Force the loading of HttpDataAccessHelper to support gzip decompression
-import 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
+import '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
 
 // ----------------------------------------------------------------------------
 // Define main attributes
@@ -49,35 +46,31 @@ const viewColors = [
 const viewAttributes = [];
 const widget = vtkResliceCursorWidget.newInstance();
 const widgetState = widget.getWidgetState();
-widgetState.setKeepOrthogonality(true);
-widgetState.setOpacity(0.6);
-
+// Set size in CSS pixel space because scaleInPixels defaults to true
+widgetState
+  .getStatesWithLabel('sphere')
+  .forEach((handle) => handle.setScale1(20));
 const showDebugActors = true;
+
+const appCursorStyles = {
+  translateCenter: 'move',
+  rotateLine: 'alias',
+  translateAxis: 'pointer',
+  default: 'default',
+};
 
 // ----------------------------------------------------------------------------
 // Define html structure
 // ----------------------------------------------------------------------------
 
 const container = document.querySelector('body');
-const table = document.createElement('table');
-table.setAttribute('id', 'table');
-container.appendChild(table);
-
-// Define first line that will contains control panel
-const trLine0 = document.createElement('tr');
-trLine0.setAttribute('id', 'line0');
-table.appendChild(trLine0);
 const controlContainer = document.createElement('div');
-trLine0.appendChild(controlContainer);
 controlContainer.innerHTML = controlPanel;
-
-const trLine1 = document.createElement('tr');
-trLine1.setAttribute('id', 'line1');
-table.appendChild(trLine1);
-
-const trLine2 = document.createElement('tr');
-trLine2.setAttribute('id', 'line2');
-table.appendChild(trLine2);
+container.appendChild(controlContainer);
+const checkboxTranslation = document.getElementById('checkboxTranslation');
+const checkboxShowRotation = document.getElementById('checkboxShowRotation');
+const checkboxRotation = document.getElementById('checkboxRotation');
+const checkboxOrthogonality = document.getElementById('checkboxOrthogonality');
 
 // ----------------------------------------------------------------------------
 // Setup rendering code
@@ -124,27 +117,28 @@ function createRGBStringFromRGBValues(rgb) {
   ).toString()})`;
 }
 
-widgetState.setOpacity(0.6);
-
 const initialPlanesState = { ...widgetState.getPlanes() };
 
 let view3D = null;
 
 for (let i = 0; i < 4; i++) {
-  const element = document.createElement('td');
+  const element = document.createElement('div');
+  element.setAttribute('class', 'view');
+  element.style.width = '50%';
+  element.style.height = '300px';
+  element.style.display = 'inline-block';
+  container.appendChild(element);
 
-  if (i % 2 === 0) {
-    trLine2.appendChild(element);
-  } else {
-    trLine1.appendChild(element);
-  }
-
+  const grw = vtkGenericRenderWindow.newInstance();
+  grw.setContainer(element);
+  grw.resize();
   const obj = {
-    renderWindow: vtkRenderWindow.newInstance(),
-    renderer: vtkRenderer.newInstance(),
-    GLWindow: vtkOpenGLRenderWindow.newInstance(),
-    interactor: vtkRenderWindowInteractor.newInstance(),
+    renderWindow: grw.getRenderWindow(),
+    renderer: grw.getRenderer(),
+    GLWindow: grw.getOpenGLRenderWindow(),
+    interactor: grw.getInteractor(),
     widgetManager: vtkWidgetManager.newInstance(),
+    orientationWidget: null,
   };
 
   obj.renderer.getActiveCamera().setParallelProjection(true);
@@ -152,7 +146,6 @@ for (let i = 0; i < 4; i++) {
   obj.renderWindow.addRenderer(obj.renderer);
   obj.renderWindow.addView(obj.GLWindow);
   obj.renderWindow.setInteractor(obj.interactor);
-  obj.GLWindow.setContainer(element);
   obj.interactor.setView(obj.GLWindow);
   obj.interactor.initialize();
   obj.interactor.bindEvents(element);
@@ -160,6 +153,9 @@ for (let i = 0; i < 4; i++) {
   if (i < 3) {
     obj.interactor.setInteractorStyle(vtkInteractorStyleImage.newInstance());
     obj.widgetInstance = obj.widgetManager.addWidget(widget, xyzToViewType[i]);
+    obj.widgetInstance.setScaleInPixels(true);
+    obj.widgetInstance.setKeepOrthogonality(checkboxOrthogonality.checked);
+    obj.widgetInstance.setCursorStyles(appCursorStyles);
     obj.widgetManager.enablePicking();
     // Use to update all renderers buffer when actors are moved
     obj.widgetManager.setCaptureOn(CaptureOn.MOUSE_MOVE);
@@ -245,17 +241,17 @@ for (let i = 0; i < 4; i++) {
   });
 
   // create orientation widget
-  const orientationWidget = vtkOrientationMarkerWidget.newInstance({
+  obj.orientationWidget = vtkOrientationMarkerWidget.newInstance({
     actor: axes,
     interactor: obj.renderWindow.getInteractor(),
   });
-  orientationWidget.setEnabled(true);
-  orientationWidget.setViewportCorner(
+  obj.orientationWidget.setEnabled(true);
+  obj.orientationWidget.setViewportCorner(
     vtkOrientationMarkerWidget.Corners.BOTTOM_RIGHT
   );
-  orientationWidget.setViewportSize(0.15);
-  orientationWidget.setMinPixelSize(100);
-  orientationWidget.setMaxPixelSize(300);
+  obj.orientationWidget.setViewportSize(0.15);
+  obj.orientationWidget.setMinPixelSize(100);
+  obj.orientationWidget.setMaxPixelSize(300);
 }
 
 // ----------------------------------------------------------------------------
@@ -275,18 +271,18 @@ function updateReslice(
     spheres: null,
   }
 ) {
-  const obj = widget.updateReslicePlane(
+  const modified = widget.updateReslicePlane(
     interactionContext.reslice,
     interactionContext.viewType
   );
-  if (obj.modified) {
+  if (modified) {
+    const resliceAxes = interactionContext.reslice.getResliceAxes();
     // Get returned modified from setter to know if we have to render
-    interactionContext.actor.setUserMatrix(
-      interactionContext.reslice.getResliceAxes()
-    );
-    interactionContext.sphereSources[0].setCenter(...obj.origin);
-    interactionContext.sphereSources[1].setCenter(...obj.point1);
-    interactionContext.sphereSources[2].setCenter(...obj.point2);
+    interactionContext.actor.setUserMatrix(resliceAxes);
+    const planeSource = widget.getPlaneSource(interactionContext.viewType);
+    interactionContext.sphereSources[0].setCenter(planeSource.getOrigin());
+    interactionContext.sphereSources[1].setCenter(planeSource.getPoint1());
+    interactionContext.sphereSources[2].setCenter(planeSource.getPoint2());
   }
   widget.updateCameraPoints(
     interactionContext.renderer,
@@ -296,7 +292,7 @@ function updateReslice(
     interactionContext.computeFocalPointOffset
   );
   view3D.renderWindow.render();
-  return obj.modified;
+  return modified;
 }
 
 const reader = vtkHttpDataSetReader.newInstance({ fetchGzip: true });
@@ -368,7 +364,7 @@ reader.setUrl(`${__BASE_PATH__}/data/volume/LIDC2.vti`).then(() => {
         computeFocalPointOffset: true, // Allow to compute the current offset between display reslice center and display focal point
         sphereSources: obj.sphereSources,
       });
-      obj.renderWindow.render();
+      obj.interactor.render();
     });
 
     view3D.renderer.resetCamera();
@@ -402,19 +398,57 @@ function updateViews() {
   view3D.renderer.resetCameraClippingRange();
 }
 
-const checkboxOrthogonality = document.getElementById('checkboxOrthogality');
-checkboxOrthogonality.addEventListener('change', (ev) => {
-  widgetState.setKeepOrthogonality(checkboxOrthogonality.checked);
-});
-
-const checkboxRotation = document.getElementById('checkboxRotation');
-checkboxRotation.addEventListener('change', (ev) => {
-  widgetState.setEnableRotation(checkboxRotation.checked);
-});
-
-const checkboxTranslation = document.getElementById('checkboxTranslation');
 checkboxTranslation.addEventListener('change', (ev) => {
-  widgetState.setEnableTranslation(checkboxTranslation.checked);
+  viewAttributes.forEach((obj) =>
+    obj.widgetInstance.setEnableTranslation(checkboxTranslation.checked)
+  );
+});
+
+checkboxShowRotation.addEventListener('change', (ev) => {
+  widgetState
+    .getStatesWithLabel('rotation')
+    .forEach((handle) => handle.setVisible(checkboxShowRotation.checked));
+  viewAttributes.forEach((obj) => {
+    obj.interactor.render();
+  });
+  checkboxRotation.checked = checkboxShowRotation.checked;
+  checkboxRotation.disabled = !checkboxShowRotation.checked;
+  checkboxRotation.dispatchEvent(new Event('change'));
+});
+
+checkboxRotation.addEventListener('change', (ev) => {
+  viewAttributes.forEach((obj) =>
+    obj.widgetInstance.setEnableRotation(checkboxRotation.checked)
+  );
+  checkboxOrthogonality.disabled = !checkboxRotation.checked;
+  checkboxOrthogonality.dispatchEvent(new Event('change'));
+});
+
+checkboxOrthogonality.addEventListener('change', (ev) => {
+  viewAttributes.forEach((obj) =>
+    obj.widgetInstance.setKeepOrthogonality(checkboxOrthogonality.checked)
+  );
+});
+
+const checkboxScaleInPixels = document.getElementById('checkboxScaleInPixels');
+checkboxScaleInPixels.addEventListener('change', (ev) => {
+  widget.setScaleInPixels(checkboxScaleInPixels.checked);
+  viewAttributes.forEach((obj) => {
+    obj.interactor.render();
+  });
+});
+
+const opacity = document.getElementById('opacity');
+opacity.addEventListener('input', (ev) => {
+  const opacityValue = document.getElementById('opacityValue');
+  opacityValue.innerHTML = ev.target.value;
+  widget
+    .getWidgetState()
+    .getStatesWithLabel('handles')
+    .forEach((handle) => handle.setOpacity(ev.target.value));
+  viewAttributes.forEach((obj) => {
+    obj.interactor.render();
+  });
 });
 
 const optionSlabModeMin = document.getElementById('slabModeMin');
@@ -445,7 +479,28 @@ sliderSlabNumberofSlices.addEventListener('change', (ev) => {
 
 const buttonReset = document.getElementById('buttonReset');
 buttonReset.addEventListener('click', () => {
-  widgetState.setPlanes(initialPlanesState);
+  widgetState.setPlanes({ ...initialPlanesState });
   widget.setCenter(widget.getWidgetState().getImage().getCenter());
   updateViews();
+});
+
+const selectInterpolationMode = document.getElementById('selectInterpolation');
+selectInterpolationMode.addEventListener('change', (ev) => {
+  viewAttributes.forEach((obj) => {
+    obj.reslice.setInterpolationMode(Number(ev.target.selectedIndex));
+  });
+  updateViews();
+});
+
+const checkboxWindowLevel = document.getElementById('checkboxWindowLevel');
+checkboxWindowLevel.addEventListener('change', (ev) => {
+  viewAttributes.forEach((obj, index) => {
+    if (index < 3) {
+      obj.interactor.setInteractorStyle(
+        checkboxWindowLevel.checked
+          ? vtkInteractorStyleImage.newInstance()
+          : vtkInteractorStyleTrackballCamera.newInstance()
+      );
+    }
+  });
 });

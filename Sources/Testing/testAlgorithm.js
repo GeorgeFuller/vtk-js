@@ -1,5 +1,5 @@
 import test from 'tape-catch';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 const model = {};
 const publicAPI = {};
@@ -46,19 +46,70 @@ test('Macro methods algo tests', (t) => {
 
   publicAPI.update();
   let output = publicAPI.getOutputData(0);
-  t.deepEqual(output, { 0: 3, 1: 5, 2: 7 }, 'Add two input arrays');
+  t.deepEqual(output, new Float32Array([3, 5, 7]), 'Add two input arrays');
 
   output = publicAPI.getOutputData(1);
-  t.deepEqual(output, { 0: 3, 1: 3, 2: 3 }, 'Subtract two input arrays');
+  t.deepEqual(output, new Float32Array([3, 3, 3]), 'Subtract two input arrays');
 
   output = publicAPI.getOutputData(2);
-  t.deepEqual(output, { 0: 0, 1: 4, 2: 10 }, 'Multiply two input arrays');
+  t.deepEqual(
+    output,
+    new Float32Array([0, 4, 10]),
+    'Multiply two input arrays'
+  );
 
   const outputPort = publicAPI.getOutputPort(3);
   t.deepEqual(
     outputPort(),
-    { 0: Infinity, 1: 4, 2: 2.5 },
+    new Float32Array([Infinity, 4, 2.5]),
     'Divide two input arrays, using outputPort'
+  );
+
+  t.end();
+});
+
+test('Macro shouldUpdate returns true if output is deleted', (t) => {
+  const algo = {
+    publicAPI: {},
+    model: {},
+  };
+  const input1 = {
+    publicAPI: {},
+    model: {},
+  };
+
+  const input2 = {
+    publicAPI: {},
+    model: {},
+  };
+
+  macro.obj(algo.publicAPI, algo.model);
+  macro.algo(algo.publicAPI, algo.model, 1, 1);
+
+  macro.obj(input1.publicAPI, input1.model);
+  macro.obj(input2.publicAPI, input2.model);
+
+  // trivial producer
+  algo.publicAPI.requestData = (inData, outData) => {
+    outData[0] = inData[0];
+  };
+
+  algo.publicAPI.setInputData(input1.publicAPI, 0);
+  t.equal(
+    input1.publicAPI,
+    algo.publicAPI.getOutputData(),
+    'Trivial producer outputs first input data'
+  );
+
+  // delete output data
+  algo.publicAPI.getOutputData().delete();
+
+  // set new data
+  algo.publicAPI.setInputData(input2.publicAPI, 0);
+  t.equal(
+    input2.publicAPI,
+    algo.publicAPI.getOutputData(),
+    'Trivial producer outputs second input data'
   );
 
   t.end();

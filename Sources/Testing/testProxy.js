@@ -1,5 +1,5 @@
 import test from 'tape-catch';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkProxyManager from 'vtk.js/Sources/Proxy/Core/ProxyManager';
 
 // ----------------------------------------------------------------------------
@@ -75,6 +75,7 @@ test('Proxy activation via config', (t) => {
   });
   proxy.activate();
 
+  proxy.getState();
   t.end();
 });
 

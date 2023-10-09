@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
 import vtkPicker from 'vtk.js/Sources/Rendering/Core/Picker';
 
@@ -15,7 +15,7 @@ function vtkPointPicker(publicAPI, model) {
   publicAPI.intersectWithLine = (p1, p2, tol, mapper) => {
     let tMin = Number.MAX_VALUE;
 
-    if (mapper.isA('vtkImageMapper')) {
+    if (mapper.isA('vtkImageMapper') || mapper.isA('vtkImageArrayMapper')) {
       const pickData = mapper.intersectWithLineForPointPicking(p1, p2);
       if (pickData) {
         tMin = pickData.t;

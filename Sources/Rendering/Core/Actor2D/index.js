@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkCoordinate from 'vtk.js/Sources/Rendering/Core/Coordinate';
 import vtkProp from 'vtk.js/Sources/Rendering/Core/Prop';
 import vtkProperty2D from 'vtk.js/Sources/Rendering/Core/Property2D';
@@ -25,9 +25,6 @@ function vtkActor2D(publicAPI, model) {
 
     // are we using an opaque texture, if any?
     isOpaque = isOpaque && (!model.texture || !model.texture.isTranslucent());
-
-    // are we using an opaque scalar array, if any?
-    isOpaque = isOpaque && (!model.mapper || model.mapper.getIsOpaque());
 
     return isOpaque;
   };

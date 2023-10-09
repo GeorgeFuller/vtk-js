@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import Constants from 'vtk.js/Sources/Rendering/Core/ImageProperty/Constants';
 
 const { InterpolationType } = Constants;
@@ -138,6 +138,7 @@ const DEFAULT_VALUES = {
   ambient: 1.0,
   diffuse: 0.0,
   opacity: 1.0,
+  useLookupTableScalarRange: false,
 };
 
 // ----------------------------------------------------------------------------
@@ -167,6 +168,7 @@ export function extend(publicAPI, model, initialValues = {}) {
     'ambient',
     'diffuse',
     'opacity',
+    'useLookupTableScalarRange',
   ]);
 
   // Object methods

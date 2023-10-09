@@ -1,7 +1,7 @@
 import { mat3, mat4 } from 'gl-matrix';
 import { ObjectType } from 'vtk.js/Sources/Rendering/OpenGL/BufferObject/Constants';
 
-import * as macro from 'vtk.js/Sources/macro';
+import * as macro from 'vtk.js/Sources/macros';
 
 import vtkBufferObject from 'vtk.js/Sources/Rendering/OpenGL/BufferObject';
 import vtkStickMapperVS from 'vtk.js/Sources/Rendering/OpenGL/glsl/vtkStickMapperVS.glsl';
@@ -74,7 +74,7 @@ function vtkOpenGLStickMapper(publicAPI, model) {
     if (model.context.getExtension('EXT_frag_depth')) {
       fragString = '  gl_FragDepthEXT = (pos.z / pos.w + 1.0) / 2.0;\n';
     }
-    if (model.openGLRenderWindow.getWebgl2()) {
+    if (model._openGLRenderWindow.getWebgl2()) {
       fragString = 'gl_FragDepth = (pos.z / pos.w + 1.0) / 2.0;\n';
     }
     // see https://www.cl.cam.ac.uk/teaching/1999/AGraphHCI/SMAG/node2.html
@@ -151,8 +151,11 @@ function vtkOpenGLStickMapper(publicAPI, model) {
     ]).result;
 
     // Strip out the normal line -- the normal is computed as part of the depth
-    FSSource = vtkShaderProgram.substitute(FSSource, '//VTK::Normal::Impl', '')
-      .result;
+    FSSource = vtkShaderProgram.substitute(
+      FSSource,
+      '//VTK::Normal::Impl',
+      ''
+    ).result;
 
     if (model.haveSeenDepthRequest) {
       // special depth impl
@@ -302,7 +305,7 @@ function vtkOpenGLStickMapper(publicAPI, model) {
     if (!vbo.getColorBO()) {
       vbo.setColorBO(vtkBufferObject.newInstance());
     }
-    vbo.getColorBO().setOpenGLRenderWindow(model.openGLRenderWindow);
+    vbo.getColorBO().setOpenGLRenderWindow(model._openGLRenderWindow);
     if (c) {
       colorComponents = c.getNumberOfComponents();
       vbo.setColorOffset(4);

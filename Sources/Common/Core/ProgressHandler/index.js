@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 // ----------------------------------------------------------------------------
 // vtkProgressHandler methods
@@ -40,8 +40,10 @@ function vtkProgressHandler(publicAPI, model) {
     });
   };
 
-  publicAPI.wrapPromiseFunction = (fn) => (...args) =>
-    publicAPI.wrapPromise(fn(...args));
+  publicAPI.wrapPromiseFunction =
+    (fn) =>
+    (...args) =>
+      publicAPI.wrapPromise(fn(...args));
 }
 
 // ----------------------------------------------------------------------------

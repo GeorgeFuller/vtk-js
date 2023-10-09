@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkViewNode from 'vtk.js/Sources/Rendering/SceneGraph/ViewNode';
 
 import { registerOverride } from 'vtk.js/Sources/Rendering/WebGPU/ViewNodeFactory';
@@ -11,9 +11,8 @@ function vtkWebGPUPixelSpaceCallbackMapper(publicAPI, model) {
   model.classHierarchy.push('vtkWebGPUPixelSpaceCallbackMapper');
 
   publicAPI.opaquePass = (prepass, renderPass) => {
-    model.WebGPURenderer = publicAPI.getFirstAncestorOfType(
-      'vtkWebGPURenderer'
-    );
+    model.WebGPURenderer =
+      publicAPI.getFirstAncestorOfType('vtkWebGPURenderer');
     model.WebGPURenderWindow = model.WebGPURenderer.getParent();
     const aspectRatio = model.WebGPURenderer.getAspectRatio();
     const camera = model.WebGPURenderer

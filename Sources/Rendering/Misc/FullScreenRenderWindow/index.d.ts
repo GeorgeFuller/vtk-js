@@ -1,4 +1,5 @@
 import { vtkObject } from "../../../interfaces";
+import { RGBAColor, RGBColor } from "../../../types";
 import vtkRenderer from "../../Core/Renderer";
 import vtkRenderWindow from "../../Core/RenderWindow";
 import vtkRenderWindowInteractor from "../../Core/RenderWindowInteractor";
@@ -10,12 +11,13 @@ import vtkRenderWindowInteractor from "../../Core/RenderWindowInteractor";
 /**
  *
  */
-interface IFullScreenRenderWindowInitialValues {
-	background?: number[];	
+export interface IFullScreenRenderWindowInitialValues {
+	background?: RGBColor | RGBAColor;
+	container?: HTMLElement
 	containerStyle?: object;
-	controlPanelStyle?: object,
-	listenWindowResize?: boolean;
+	controlPanelStyle?: object;
 	controllerVisibility?: boolean;
+	listenWindowResize?: boolean;
 	resizeCallback?: any;
 }
 
@@ -92,9 +94,9 @@ export interface vtkFullScreenRenderWindow extends vtkObject {
 
 	/**
 	 * Set background color
-	 * @param {Number[]} background The background color.
+	 * @param {RGBColor | RGBAColor} background The background color.
 	 */
-	setBackground(background: number[]): boolean;
+	setBackground(background: RGBColor | RGBAColor): boolean;
 
 	/**
 	 * Hide or show controller

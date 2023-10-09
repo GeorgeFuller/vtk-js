@@ -1,4 +1,7 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
+import Constants from 'vtk.js/Sources/Rendering/Core/Prop/Constants';
+
+const { CoordinateSystem } = Constants;
 
 function notImplemented(method) {
   return () => macro.vtkErrorMacro(`vtkProp::${method} - NOT IMPLEMENTED`);
@@ -23,6 +26,8 @@ function vtkProp(publicAPI, model) {
     return m1;
   };
 
+  publicAPI.processSelectorPixelBuffers = (selector, pixeloffsets) => {};
+
   publicAPI.getNestedProps = () => null;
   publicAPI.getActors = () => [];
   publicAPI.getActors2D = () => [];
@@ -30,6 +35,16 @@ function vtkProp(publicAPI, model) {
 
   publicAPI.pick = notImplemented('pick');
   publicAPI.hasKey = notImplemented('hasKey');
+
+  publicAPI.getNestedVisibility = () =>
+    model.visibility &&
+    (!model._parentProp || model._parentProp.getNestedVisibility());
+  publicAPI.getNestedPickable = () =>
+    model.pickable &&
+    (!model._parentProp || model._parentProp.getNestedPickable());
+  publicAPI.getNestedDragable = () =>
+    model.dragable &&
+    (!model._parentProp || model._parentProp.getNestedDragable());
 
   publicAPI.getRedrawMTime = () => model.mtime;
 
@@ -75,6 +90,12 @@ function vtkProp(publicAPI, model) {
     model.textures = [];
     publicAPI.modified();
   };
+
+  // not all mappers support all coordinate systems
+  publicAPI.setCoordinateSystemToWorld = () =>
+    publicAPI.setCoordinateSystem(CoordinateSystem.WORLD);
+  publicAPI.setCoordinateSystemToDisplay = () =>
+    publicAPI.setCoordinateSystem(CoordinateSystem.DISPLAY);
 }
 
 // ----------------------------------------------------------------------------
@@ -82,16 +103,18 @@ function vtkProp(publicAPI, model) {
 // ----------------------------------------------------------------------------
 
 const DEFAULT_VALUES = {
-  visibility: true,
-  pickable: true,
-  dragable: true,
-  useBounds: true,
+  // _parentProp: null,
   allocatedRenderTime: 10,
+  coordinateSystem: CoordinateSystem.WORLD,
+  dragable: true,
   estimatedRenderTime: 0,
-  savedEstimatedRenderTime: 0,
-  renderTimeMultiplier: 1,
   paths: null,
+  pickable: true,
+  renderTimeMultiplier: 1,
+  savedEstimatedRenderTime: 0,
   textures: [],
+  useBounds: true,
+  visibility: true,
 };
 
 // ----------------------------------------------------------------------------
@@ -103,12 +126,15 @@ export function extend(publicAPI, model, initialValues = {}) {
   macro.obj(publicAPI, model);
   macro.get(publicAPI, model, ['estimatedRenderTime', 'allocatedRenderTime']);
   macro.setGet(publicAPI, model, [
-    'visibility',
-    'pickable',
+    '_parentProp',
+    'coordinateSystem',
     'dragable',
-    'useBounds',
+    'pickable',
     'renderTimeMultiplier',
+    'useBounds',
+    'visibility',
   ]);
+  macro.moveToProtected(publicAPI, model, ['parentProp']);
 
   // Object methods
   vtkProp(publicAPI, model);
@@ -120,4 +146,4 @@ export const newInstance = macro.newInstance(extend, 'vtkProp');
 
 // ----------------------------------------------------------------------------
 
-export default { newInstance, extend };
+export default { newInstance, extend, ...Constants };

@@ -1,9 +1,12 @@
 import { mat4 } from 'gl-matrix';
 
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
+import vtkProp from 'vtk.js/Sources/Rendering/Core/Prop';
 import vtkViewNode from 'vtk.js/Sources/Rendering/SceneGraph/ViewNode';
 
 import { registerOverride } from 'vtk.js/Sources/Rendering/WebGPU/ViewNodeFactory';
+
+const { CoordinateSystem } = vtkProp;
 
 // ----------------------------------------------------------------------------
 // vtkWebGPUActor methods
@@ -16,9 +19,8 @@ function vtkWebGPUActor(publicAPI, model) {
   // Builds myself.
   publicAPI.buildPass = (prepass) => {
     if (prepass) {
-      model.WebGPURenderer = publicAPI.getFirstAncestorOfType(
-        'vtkWebGPURenderer'
-      );
+      model.WebGPURenderer =
+        publicAPI.getFirstAncestorOfType('vtkWebGPURenderer');
       model.WebGPURenderWindow = model.WebGPURenderer.getFirstAncestorOfType(
         'vtkWebGPURenderWindow'
       );
@@ -35,9 +37,10 @@ function vtkWebGPUActor(publicAPI, model) {
   publicAPI.traverseOpaquePass = (renderPass) => {
     if (
       !model.renderable ||
-      !model.renderable.getVisibility() ||
+      !model.renderable.getNestedVisibility() ||
       !model.renderable.getIsOpaque() ||
-      (model.WebGPURenderer.getSelector() && !model.renderable.getPickable())
+      (model.WebGPURenderer.getSelector() &&
+        !model.renderable.getNestedPickable())
     ) {
       return;
     }
@@ -55,9 +58,10 @@ function vtkWebGPUActor(publicAPI, model) {
   publicAPI.traverseTranslucentPass = (renderPass) => {
     if (
       !model.renderable ||
-      !model.renderable.getVisibility() ||
+      !model.renderable.getNestedVisibility() ||
       model.renderable.getIsOpaque() ||
-      (model.WebGPURenderer.getSelector() && !model.renderable.getPickable())
+      (model.WebGPURenderer.getSelector() &&
+        !model.renderable.getNestedPickable())
     ) {
       return;
     }
@@ -99,11 +103,16 @@ function vtkWebGPUActor(publicAPI, model) {
 
       const mcwc = model.renderable.getMatrix();
 
-      // compute the net shift
+      // compute the net shift, only apply stabilized coords with world coordinates
+      model.bufferShift[0] = mcwc[3];
+      model.bufferShift[1] = mcwc[7];
+      model.bufferShift[2] = mcwc[11];
       const center = wgpuRen.getStabilizedCenterByReference();
-      model.bufferShift[0] = mcwc[3] - center[0];
-      model.bufferShift[1] = mcwc[7] - center[1];
-      model.bufferShift[2] = mcwc[11] - center[2];
+      if (model.renderable.getCoordinateSystem() === CoordinateSystem.WORLD) {
+        model.bufferShift[0] -= center[0];
+        model.bufferShift[1] -= center[1];
+        model.bufferShift[2] -= center[2];
+      }
 
       mat4.transpose(model.keyMatrices.bcwc, mcwc);
 
@@ -126,7 +135,7 @@ function vtkWebGPUActor(publicAPI, model) {
         );
       }
 
-      // only meed the buffer shift to get to world
+      // only need the buffer shift to get to world
       mat4.translate(model.keyMatrices.bcwc, model.keyMatrices.bcwc, [
         -model.bufferShift[0],
         -model.bufferShift[1],
@@ -134,11 +143,15 @@ function vtkWebGPUActor(publicAPI, model) {
       ]);
 
       // to get to stabilized we also need the center
-      mat4.translate(model.keyMatrices.bcsc, model.keyMatrices.bcwc, [
-        -center[0],
-        -center[1],
-        -center[2],
-      ]);
+      if (model.renderable.getCoordinateSystem() === CoordinateSystem.WORLD) {
+        mat4.translate(model.keyMatrices.bcsc, model.keyMatrices.bcwc, [
+          -center[0],
+          -center[1],
+          -center[2],
+        ]);
+      } else {
+        mat4.copy(model.keyMatrices.bcsc, model.keyMatrices.bcwc);
+      }
 
       model.keyMatricesTime.modified();
     }

@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkContextRepresentation from 'vtk.js/Sources/Widgets/Representations/ContextRepresentation';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
@@ -40,7 +40,7 @@ function vtkOutlineContextRepresentation(publicAPI, model) {
   model.mapper = vtkMapper.newInstance({
     scalarVisibility: false,
   });
-  model.actor = vtkActor.newInstance();
+  model.actor = vtkActor.newInstance({ parentProp: publicAPI });
   model.actor.getProperty().setEdgeColor(...model.edgeColor);
   model.mapper.setInputConnection(publicAPI.getOutputPort());
   model.actor.setMapper(model.mapper);
@@ -50,12 +50,16 @@ function vtkOutlineContextRepresentation(publicAPI, model) {
   // --------------------------------------------------------------------------
 
   publicAPI.requestData = (inData, outData) => {
-    const list = publicAPI.getRepresentationStates(inData[0]);
+    const list = publicAPI
+      .getRepresentationStates(inData[0])
+      .filter((state) => state.getOrigin && state.getOrigin());
     vtkBoundingBox.reset(model.bbox);
 
     for (let i = 0; i < list.length; i++) {
       const pt = list[i].getOrigin();
-      vtkBoundingBox.addPoint(model.bbox, ...pt);
+      if (pt) {
+        vtkBoundingBox.addPoint(model.bbox, ...pt);
+      }
     }
 
     // BOUNDS_MAP.length should equal model.points.length

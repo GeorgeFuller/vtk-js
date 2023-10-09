@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkXMLWriter from 'vtk.js/Sources/IO/XML/XMLWriter';
 
 // ----------------------------------------------------------------------------
@@ -23,6 +23,7 @@ function vtkXMLImageDataWriter(publicAPI, model) {
       WholeExtent: dataObject.getExtent().join(' '),
       Origin: dataObject.getOrigin().join(' '),
       Spacing: dataObject.getSpacing().join(' '),
+      Direction: dataObject.getDirection().join(' '),
     });
 
     const piece = imageData.ele('Piece', {

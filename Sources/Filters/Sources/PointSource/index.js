@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
 import vtkPolyData from 'vtk.js/Sources/Common/DataModel/PolyData';
 
@@ -20,7 +20,7 @@ function vtkPointSource(publicAPI, model) {
     // Check input
     const pointDataType = dataset
       ? dataset.getPoints().getDataType()
-      : 'Float32Array';
+      : model.pointType;
     const pd = vtkPolyData.newInstance();
 
     // hand create a point cloud
@@ -70,7 +70,7 @@ const DEFAULT_VALUES = {
   numberOfPoints: 10,
   center: [0, 0, 0],
   radius: 0.5,
-  pointType: 'Float32Array',
+  pointType: 'Float64Array',
 };
 
 // ----------------------------------------------------------------------------

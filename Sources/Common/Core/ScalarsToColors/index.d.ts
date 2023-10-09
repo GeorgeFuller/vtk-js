@@ -1,24 +1,13 @@
-import { vtkObject } from "../../../interfaces" ;
-import { ColorMode } from "../../../Rendering/Core/Mapper";
-import { Range } from "../../../types" ;
-
-export enum VectorMode {
-  MAGNITUDE,
-  COMPONENT,
-  RGBCOLORS
-}
-
-export enum ScalarMappingTarget {
-  LUMINANCE,
-  LUMINANCE_ALPHA,
-  RGB,
-  RGBA
-}
+import { vtkObject } from "../../../interfaces";
+import { ColorMode } from "../../../Rendering/Core/Mapper/Constants";
+import { Range } from "../../../types";
+import vtkDataArray from "../DataArray";
+import { ScalarMappingTarget, VectorMode } from "./Constants";
 
 /**
  *
  */
-interface IScalarsToColorsInitialValues {
+export interface IScalarsToColorsInitialValues {
 	alpha?: number;
 	vectorComponent?: number;
 	vectorSize?: number;
@@ -28,7 +17,7 @@ interface IScalarsToColorsInitialValues {
 export interface vtkScalarsToColors extends vtkObject {
 
 	/**
-	 * 
+	 * Perform any processing required (if any) before processing scalars.
 	 */
 	build(): void;
 
@@ -47,7 +36,7 @@ export interface vtkScalarsToColors extends vtkObject {
 	convertToRGBA(colors: any, numComp: number, numTuples: number): void;
 
 	/**
-	 * 
+	 * Specify an additional opacity (alpha) value to blend with.
 	 */
 	getAlpha(): number;
 
@@ -64,8 +53,7 @@ export interface vtkScalarsToColors extends vtkObject {
 	getAnnotatedValueIndex(val: any): number;
 
 	/**
-	 * 
-	 * An unsafe version of vtkScalarsToColors::CheckForAnnotatedValue for
+	 * An unsafe version of vtkScalarsToColors.checkForAnnotatedValue for
 	 * internal use (no pointer checks performed)
 	 * @param value 
 	 */
@@ -107,21 +95,19 @@ export interface vtkScalarsToColors extends vtkObject {
 	getMappingRangeByReference(): Range;
 
 	/**
-	 * 
+	 * Return the annotated value at a particular index in the list of annotations.
 	 */
 	getNumberOfAnnotatedValues(): number;
 
 	/**
-	 * 
+	 * Get the number of available colors for mapping to.
 	 */
 	getNumberOfAvailableColors(): number;
 
 	/**
 	 * 
-	 * @param {Number} min 
-	 * @param {Number} max 
 	 */
-	getRange(min: number, max: number): Range;
+	getRange(): Range;
 
 	/**
 	 * Get which component of a vector to map to colors.
@@ -139,9 +125,23 @@ export interface vtkScalarsToColors extends vtkObject {
 	getVectorSize(): number;
 
 	/**
-	 * 
+	 * @see areScalarsOpaque
 	 */
 	isOpaque(): boolean;
+
+	/**
+	 * Returns false if scalars are Uint8 LA or RGBA with A < 255,
+	 * otherwise rely on getAlpha() in case of direct mapping,
+	 * otherwise return isOpaque()
+	 * 
+	 * @see isOpaque, getAlpha
+	 * 
+	 * @param {vtkDataArray} scalars 
+	 * @param {ColorMode} colorMode 
+	 * @param {Number} componentIn 
+	 * 
+	 */
+	areScalarsOpaque(scalars: vtkDataArray, colorMode: ColorMode, componentIn: number): boolean;
 
 	/**
 	 * 
@@ -218,13 +218,13 @@ export interface vtkScalarsToColors extends vtkObject {
 	rGBToRGBA(newColors: any, colors: any, alpha: number, convtFun: any): void;
 
 	/**
-	 * 
+	 * Remove an existing entry from the list of annotated values.
 	 * @param value 
 	 */
 	removeAnnotation(value: any): boolean;
 
 	/**
-	 * 
+	 * Remove all existing values and their annotations.
 	 */
 	resetAnnotations(): void;
 
@@ -281,18 +281,27 @@ export interface vtkScalarsToColors extends vtkObject {
 	setRange(min: number, max: number): boolean;
 
 	/**
-	 * 
-	 * @param {Number} vectorComponent 
+	 * If the mapper does not select which component of a vector to map to
+	 * colors, you can specify it here.
+	 * @param {Number} vectorComponent The value of the vector mode.
 	 */
-	setVectorComponent(vectorComponent:number): boolean;
+	setVectorComponent(vectorComponent: number): boolean;
 
 	/**
-	 * 
+	 * Change mode that maps vectors by magnitude vs. component. If the mode is
+	 * "RGBColors", then the vectors components are scaled to the range and
+	 * passed directly as the colors.
+	 * @param {VectorMode} vectorMode The value of the vector mode.
+	 */
+	setVectorMode(vectorMode: VectorMode): boolean;
+
+	/**
+	 * Set vectorMode to `VectorMode.MAGNITUDE`
 	 */
 	setVectorModeToMagnitude(): boolean;
 
 	/**
-	 * 
+	 * Set vectorMode to `VectorMode.COMPONENT`
 	 */
 	setVectorModeToComponent(): boolean;
 
@@ -306,13 +315,14 @@ export interface vtkScalarsToColors extends vtkObject {
 	setVectorModeToRGBColors(): boolean;
 
 	/**
-	 * 
-	 * @param {Number} vectorSize 
+	 * When mapping vectors, consider only the number of components selected by
+	 * VectorSize to be part of the vector, and ignore any other components.
+	 * @param {Number} vectorSize The value of the vectorSize.
 	 */
 	setVectorSize(vectorSize: number): boolean;
 
 	/**
-	 * 
+	 * Update the map from annotated values to indices in the array of annotations.
 	 */
 	updateAnnotatedValueMap(): boolean;
 
@@ -361,5 +371,7 @@ export function newInstance(initialValues?: IScalarsToColorsInitialValues): vtkS
 export declare const vtkScalarsToColors: {
 	newInstance: typeof newInstance;
 	extend: typeof extend;
+	VectorMode: typeof VectorMode;
+	ScalarMappingTarget: typeof VectorMode;
 }
 export default vtkScalarsToColors;

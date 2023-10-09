@@ -1,11 +1,11 @@
-import md5 from 'blueimp-md5';
+import Md5 from 'spark-md5';
 
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkShaderProgram from 'vtk.js/Sources/Rendering/OpenGL/ShaderProgram';
 
 // ----------------------------------------------------------------------------
 
-const SET_GET_FIELDS = ['lastShaderBound', 'context', 'openGLRenderWindow'];
+const SET_GET_FIELDS = ['lastShaderBound', 'context', '_openGLRenderWindow'];
 
 // ----------------------------------------------------------------------------
 // vtkShaderCache methods
@@ -24,11 +24,14 @@ function vtkShaderCache(publicAPI, model) {
 
     let nFSSource = FSSource;
     if (GSSource.length > 0) {
-      nFSSource = vtkShaderProgram.substitute(nFSSource, 'VSOut', 'GSOut')
-        .result;
+      nFSSource = vtkShaderProgram.substitute(
+        nFSSource,
+        'VSOut',
+        'GSOut'
+      ).result;
     }
 
-    const gl2 = model.openGLRenderWindow.getWebgl2();
+    const gl2 = model._openGLRenderWindow.getWebgl2();
 
     let fragDepthString = '\n';
 
@@ -83,19 +86,32 @@ function vtkShaderCache(publicAPI, model) {
     ).result;
 
     if (gl2) {
-      nVSSource = vtkShaderProgram.substitute(nVSSource, 'varying', 'out')
-        .result;
-      nFSSource = vtkShaderProgram.substitute(nFSSource, 'varying', 'in')
-        .result;
-      nFSSource = vtkShaderProgram.substitute(
-        nFSSource,
-        'gl_FragData\\[0\\]',
-        'fragOutput0'
+      nVSSource = vtkShaderProgram.substitute(
+        nVSSource,
+        'varying',
+        'out'
       ).result;
       nFSSource = vtkShaderProgram.substitute(
         nFSSource,
+        'varying',
+        'in'
+      ).result;
+
+      let shaderOutputs = '';
+      let outputCount = 0;
+      while (nFSSource.includes(`gl_FragData[${outputCount}]`)) {
+        nFSSource = vtkShaderProgram.substitute(
+          nFSSource,
+          `gl_FragData\\[${outputCount}\\]`,
+          `fragOutput${outputCount}`
+        ).result;
+        shaderOutputs += `layout(location = ${outputCount}) out vec4 fragOutput${outputCount};\n`;
+        outputCount++;
+      }
+      nFSSource = vtkShaderProgram.substitute(
+        nFSSource,
         '//VTK::Output::Dec',
-        'layout(location = 0) out vec4 fragOutput0;'
+        shaderOutputs
       ).result;
     }
 
@@ -153,12 +169,10 @@ function vtkShaderCache(publicAPI, model) {
   publicAPI.getShaderProgram = (vertexCode, fragmentCode, geometryCode) => {
     // compute the MD5 and the check the map
     const hashInput = `${vertexCode}${fragmentCode}${geometryCode}`;
-    const result = md5(hashInput);
+    const result = Md5.hash(hashInput);
 
     // does it already exist?
-    const loc = Object.keys(model.shaderPrograms).indexOf(result);
-
-    if (loc === -1) {
+    if (!(result in model.shaderPrograms)) {
       // create one
       const sps = vtkShaderProgram.newInstance();
       sps.setContext(model.context);
@@ -222,7 +236,7 @@ const DEFAULT_VALUES = {
   lastShaderBound: null,
   shaderPrograms: null,
   context: null,
-  openGLRenderWindow: null,
+  // _openGLRenderWindow: null,
 };
 
 // ----------------------------------------------------------------------------
@@ -236,6 +250,7 @@ export function extend(publicAPI, model, initialValues = {}) {
   // Build VTK API
   macro.obj(publicAPI, model);
   macro.setGet(publicAPI, model, SET_GET_FIELDS);
+  macro.moveToProtected(publicAPI, model, ['openGLRenderWindow']);
 
   // Object methods
   vtkShaderCache(publicAPI, model);

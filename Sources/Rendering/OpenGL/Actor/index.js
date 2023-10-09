@@ -1,6 +1,6 @@
 import { mat3, mat4 } from 'gl-matrix';
 
-import * as macro from 'vtk.js/Sources/macro';
+import * as macro from 'vtk.js/Sources/macros';
 import vtkViewNode from 'vtk.js/Sources/Rendering/SceneGraph/ViewNode';
 
 import { registerOverride } from 'vtk.js/Sources/Rendering/OpenGL/ViewNodeFactory';
@@ -16,13 +16,12 @@ function vtkOpenGLActor(publicAPI, model) {
   // Builds myself.
   publicAPI.buildPass = (prepass) => {
     if (prepass) {
-      model.openGLRenderWindow = publicAPI.getFirstAncestorOfType(
+      model._openGLRenderWindow = publicAPI.getFirstAncestorOfType(
         'vtkOpenGLRenderWindow'
       );
-      model.openGLRenderer = publicAPI.getFirstAncestorOfType(
-        'vtkOpenGLRenderer'
-      );
-      model.context = model.openGLRenderWindow.getContext();
+      model._openGLRenderer =
+        publicAPI.getFirstAncestorOfType('vtkOpenGLRenderer');
+      model.context = model._openGLRenderWindow.getContext();
       publicAPI.prepareNodes();
       publicAPI.addMissingNodes(model.renderable.getTextures());
       publicAPI.addMissingNode(model.renderable.getMapper());
@@ -45,17 +44,35 @@ function vtkOpenGLActor(publicAPI, model) {
     }
   };
 
-  publicAPI.traverseOpaqueZBufferPass = (renderPass) => {
-    publicAPI.traverseOpaquePass(renderPass);
+  // render both opaque and translucent actors
+  publicAPI.traverseZBufferPass = (renderPass) => {
+    if (
+      !model.renderable ||
+      !model.renderable.getNestedVisibility() ||
+      (model._openGLRenderer.getSelector() &&
+        !model.renderable.getNestedPickable())
+    ) {
+      return;
+    }
+
+    publicAPI.apply(renderPass, true);
+    model.oglmapper.traverse(renderPass);
+
+    publicAPI.apply(renderPass, false);
   };
+
+  // only render opaque actors
+  publicAPI.traverseOpaqueZBufferPass = (renderPass) =>
+    publicAPI.traverseOpaquePass(renderPass);
 
   // we draw textures, then mapper, then post pass textures
   publicAPI.traverseOpaquePass = (renderPass) => {
     if (
       !model.renderable ||
-      !model.renderable.getVisibility() ||
+      !model.renderable.getNestedVisibility() ||
       !model.renderable.getIsOpaque() ||
-      (model.openGLRenderer.getSelector() && !model.renderable.getPickable())
+      (model._openGLRenderer.getSelector() &&
+        !model.renderable.getNestedPickable())
     ) {
       return;
     }
@@ -71,9 +88,10 @@ function vtkOpenGLActor(publicAPI, model) {
   publicAPI.traverseTranslucentPass = (renderPass) => {
     if (
       !model.renderable ||
-      !model.renderable.getVisibility() ||
+      !model.renderable.getNestedVisibility() ||
       model.renderable.getIsOpaque() ||
-      (model.openGLRenderer.getSelector() && !model.renderable.getPickable())
+      (model._openGLRenderer.getSelector() &&
+        !model.renderable.getNestedPickable())
     ) {
       return;
     }
@@ -114,12 +132,15 @@ function vtkOpenGLActor(publicAPI, model) {
     }
   };
 
+  publicAPI.zBufferPass = (prepass, renderPass) =>
+    publicAPI.opaquePass(prepass, renderPass);
+
   publicAPI.opaqueZBufferPass = (prepass, renderPass) =>
     publicAPI.opaquePass(prepass, renderPass);
 
   publicAPI.opaquePass = (prepass, renderPass) => {
     if (prepass) {
-      model.openGLRenderWindow.enableDepthMask();
+      model.context.depthMask(true);
       publicAPI.activateTextures();
     } else if (model.activeTextures) {
       for (let index = 0; index < model.activeTextures.length; index++) {
@@ -131,7 +152,7 @@ function vtkOpenGLActor(publicAPI, model) {
   // Renders myself
   publicAPI.translucentPass = (prepass, renderPass) => {
     if (prepass) {
-      model.openGLRenderWindow.disableDepthMask();
+      model.context.depthMask(false);
       publicAPI.activateTextures();
     } else if (model.activeTextures) {
       for (let index = 0; index < model.activeTextures.length; index++) {

@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkPolyData from 'vtk.js/Sources/Common/DataModel/PolyData';
 import vtkMatrixBuilder from 'vtk.js/Sources/Common/Core/MatrixBuilder';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
@@ -414,7 +414,7 @@ const DEFAULT_VALUES = {
   direction: [0.0, 0.0, 1.0],
   skipInnerFaces: true,
   mask: null, // If present, array to know if a layer should be skipped(=true)
-  pointType: 'Float32Array',
+  pointType: 'Float64Array',
 };
 
 // ----------------------------------------------------------------------------

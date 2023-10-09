@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkWebGPURenderEncoder from 'vtk.js/Sources/Rendering/WebGPU/RenderEncoder';
 import vtkWebGPUTexture from 'vtk.js/Sources/Rendering/WebGPU/Texture';
 import vtkRenderPass from 'vtk.js/Sources/Rendering/SceneGraph/RenderPass';
@@ -19,42 +19,43 @@ function vtkWebGPUOpaquePass(publicAPI, model) {
     }
 
     // we just render our delegates in order
-    model.currentParent = viewNode;
+    model._currentParent = viewNode;
 
     const device = viewNode.getDevice();
 
     if (!model.renderEncoder) {
       publicAPI.createRenderEncoder();
-      model.colorTexture = vtkWebGPUTexture.newInstance();
+      model.colorTexture = vtkWebGPUTexture.newInstance({
+        label: 'opaquePassColor',
+      });
       model.colorTexture.create(device, {
         width: viewNode.getCanvas().width,
         height: viewNode.getCanvas().height,
-        format: 'bgra8unorm',
+        format: 'rgba16float',
         /* eslint-disable no-undef */
         /* eslint-disable no-bitwise */
         usage:
           GPUTextureUsage.RENDER_ATTACHMENT |
-          GPUTextureUsage.SAMPLED |
+          GPUTextureUsage.TEXTURE_BINDING |
           GPUTextureUsage.COPY_SRC,
       });
-      const ctView = model.colorTexture.createView();
-      ctView.setName('opaquePassColorTexture');
+      const ctView = model.colorTexture.createView('opaquePassColorTexture');
       model.renderEncoder.setColorTextureView(0, ctView);
 
-      // model.depthFormat = 'depth24plus-stencil8';
       model.depthFormat = 'depth32float';
-      model.depthTexture = vtkWebGPUTexture.newInstance();
+      model.depthTexture = vtkWebGPUTexture.newInstance({
+        label: 'opaquePassDepth',
+      });
       model.depthTexture.create(device, {
         width: viewNode.getCanvas().width,
         height: viewNode.getCanvas().height,
         format: model.depthFormat,
         usage:
           GPUTextureUsage.RENDER_ATTACHMENT |
-          GPUTextureUsage.SAMPLED |
+          GPUTextureUsage.TEXTURE_BINDING |
           GPUTextureUsage.COPY_SRC,
       });
-      const dView = model.depthTexture.createView();
-      dView.setName('opaquePassDepthTexture');
+      const dView = model.depthTexture.createView('opaquePassDepthTexture');
       model.renderEncoder.setDepthTextureView(dView);
     } else {
       model.colorTexture.resize(
@@ -80,7 +81,9 @@ function vtkWebGPUOpaquePass(publicAPI, model) {
     model.renderEncoder.getDepthTextureView();
 
   publicAPI.createRenderEncoder = () => {
-    model.renderEncoder = vtkWebGPURenderEncoder.newInstance();
+    model.renderEncoder = vtkWebGPURenderEncoder.newInstance({
+      label: 'OpaquePass',
+    });
     // default settings are fine for this
     model.renderEncoder.setPipelineHash('op');
   };

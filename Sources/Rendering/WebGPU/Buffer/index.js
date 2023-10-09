@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import Constants from 'vtk.js/Sources/Rendering/WebGPU/BufferManager/Constants';
 
 // methods we forward to the handle
@@ -37,6 +37,7 @@ function vtkWebGPUBuffer(publicAPI, model) {
     model.handle = model.device.getHandle().createBuffer({
       size: sizeInBytes,
       usage,
+      label: model.label,
     });
     model.sizeInBytes = sizeInBytes;
     model.usage = usage;
@@ -51,6 +52,7 @@ function vtkWebGPUBuffer(publicAPI, model) {
       size: data.byteLength,
       usage,
       mappedAtCreation: true,
+      label: model.label,
     });
     model.sizeInBytes = data.byteLength;
     model.usage = usage;
@@ -77,6 +79,7 @@ const DEFAULT_VALUES = {
   strideInBytes: 0,
   arrayInformation: null,
   usage: null,
+  label: null,
   sourceTime: null,
 };
 
@@ -93,6 +96,7 @@ export function extend(publicAPI, model, initialValues = {}) {
     'strideInBytes',
     'device',
     'arrayInformation',
+    'label',
     'sourceTime',
   ]);
 

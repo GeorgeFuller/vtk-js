@@ -1,6 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
-
-const TUPLE_HOLDER = [];
+import macro from 'vtk.js/Sources/macros';
 
 // ----------------------------------------------------------------------------
 // vtkStringArray methods
@@ -31,7 +29,7 @@ function vtkStringArray(publicAPI, model) {
 
   publicAPI.getData = () => model.values;
 
-  publicAPI.getTuple = (idx, tupleToFill = TUPLE_HOLDER) => {
+  publicAPI.getTuple = (idx, tupleToFill = []) => {
     const numberOfComponents = model.numberOfComponents || 1;
     if (tupleToFill.length) {
       tupleToFill.length = numberOfComponents;
@@ -59,8 +57,7 @@ function vtkStringArray(publicAPI, model) {
 
   publicAPI.getName = () => {
     if (!model.name) {
-      publicAPI.modified();
-      model.name = `vtkStringArray${publicAPI.getMTime()}`;
+      publicAPI.setName(`vtkStringArray${publicAPI.getMTime()}`);
     }
     return model.name;
   };

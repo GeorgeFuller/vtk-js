@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtk from 'vtk.js/Sources/vtk';
 import vtkCellArray from 'vtk.js/Sources/Common/Core/CellArray';
 import vtkCellLinks from 'vtk.js/Sources/Common/DataModel/CellLinks';
@@ -174,10 +174,10 @@ function vtkPolyData(publicAPI, model) {
     model.links.buildLinks(publicAPI);
   };
 
-  // Returns an object made of the cellType and a subarray `cellPointIds` of
-  // the cell points.
+  publicAPI.getCellType = (cellId) => model.cells.getCellType(cellId);
+
   publicAPI.getCellPoints = (cellId) => {
-    const cellType = model.cells.getCellType(cellId);
+    const cellType = publicAPI.getCellType(cellId);
     let cells = null;
     switch (cellType) {
       case CellType.VTK_VERTEX:

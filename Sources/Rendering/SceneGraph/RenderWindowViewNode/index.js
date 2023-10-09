@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkViewNode from 'vtk.js/Sources/Rendering/SceneGraph/ViewNode';
 
 // ----------------------------------------------------------------------------
@@ -117,8 +117,8 @@ function vtkRenderWindowViewNode(publicAPI, model) {
     return [x, y, z];
   };
 
-  publicAPI.normalizedViewportToViewport = (x, y, z) => {
-    const size = publicAPI.getFramebufferSize();
+  publicAPI.normalizedViewportToViewport = (x, y, z, renderer) => {
+    const size = publicAPI.getViewportSize(renderer);
     return [x * (size[0] - 1.0), y * (size[1] - 1.0), z];
   };
 
@@ -135,9 +135,19 @@ function vtkRenderWindowViewNode(publicAPI, model) {
     return publicAPI.displayToNormalizedDisplay(x2, y2, z);
   };
 
+  publicAPI.getComputedDevicePixelRatio = () =>
+    model.size[0] / publicAPI.getContainerSize()[0];
+
+  publicAPI.getContainerSize = () => {
+    macro.vtkErrorMacro('not implemented');
+  };
+
   publicAPI.getPixelData = (x1, y1, x2, y2) => {
     macro.vtkErrorMacro('not implemented');
-    return undefined;
+  };
+
+  publicAPI.createSelector = () => {
+    macro.vtkErrorMacro('not implemented');
   };
 }
 

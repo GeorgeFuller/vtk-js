@@ -1,5 +1,5 @@
 import test from 'tape-catch';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 const MY_ENUM = {
   ZERO: 0,
@@ -30,6 +30,24 @@ const DEFAULT_VALUES = {
   myProp6: [0.1, 0.2, 0.3, 0.4, 0.5],
   myProp7: MY_ENUM.FIRST,
   myProp8: [1, 2, 3],
+  _onMyProp8Changed: (publicAPI, model) => {
+    ++model._onMyProp8ChangedCallsCount;
+  },
+  _onMyProp8ChangedCallsCount: 0,
+  myProp9: null,
+  // myProp10: null,
+  myProp11: 11,
+  _onMyProp11Changed: (publicAPI, model) => {
+    ++model._onMyProp11ChangedCallsCount;
+  },
+  _onMyProp11ChangedCallsCount: 0,
+  _myProp12: [12],
+  _myProp13: 13,
+  myObjectProp: { foo: 1 },
+  _onMyObjectPropChanged: (publicAPI, model) => {
+    ++model._onMyObjectPropChangedCallsCount;
+  },
+  _onMyObjectPropChangedCallsCount: 0,
 };
 
 // ----------------------------------------------------------------------------
@@ -57,6 +75,20 @@ function extend(publicAPI, model, initialValues = {}) {
 
   // setArray macros with default value
   macro.setGetArray(publicAPI, model, ['myProp8'], 3, 0);
+
+  // setArray macros with no initial value
+  macro.setGetArray(publicAPI, model, ['myProp9'], 3);
+
+  // setArray macros with no size
+  macro.setGetArray(publicAPI, model, ['myProp10']);
+
+  // Protected variables
+  macro.setGet(publicAPI, model, ['_myProp11']);
+  macro.setGetArray(publicAPI, model, ['_myProp12'], 1);
+  macro.moveToProtected(publicAPI, model, ['myProp11', 'myProp12', 'myProp13']);
+
+  // Object member variables
+  macro.setGet(publicAPI, model, [{ name: 'myObjectProp', type: 'object' }]);
 
   // Object specific methods
   myClass(publicAPI, model);
@@ -126,10 +158,11 @@ test('Macro methods array tests', (t) => {
   const mtime1 = myTestClass.getMTime();
   myArray[0] = 99.9;
   t.ok(myTestClass.setMyProp5(myArray), 'OK to set a single array argument');
+  const mtime2 = myTestClass.getMTime();
   t.deepEqual(myTestClass.getMyProp5(), myArray, 'Array set should match get');
 
-  const mtime2 = myTestClass.getMTime();
   t.ok(mtime2 > mtime1, 'mtime should increase after set');
+
   // set a too-short array, separate args
   t.throws(
     () => myTestClass.setMyProp6(1, 2, 3),
@@ -144,6 +177,15 @@ test('Macro methods array tests', (t) => {
 
   const mtime3 = myTestClass.getMTime();
   t.ok(mtime3 === mtime2, 'mtime should not increase after idempotent set');
+  t.ok(!myTestClass.setMyProp5(myArray), 'False if set same array');
+  t.ok(!myTestClass.setMyProp5(...myArray), 'False if set same array');
+  t.ok(!myTestClass.setMyProp5([...myArray]), 'False if set same array');
+  t.ok(
+    !myTestClass.setMyProp5(new Float64Array(myArray)),
+    'False if set same array'
+  );
+  const mtime4 = myTestClass.getMTime();
+  t.ok(mtime4 === mtime3, 'mtime should not increase after same set');
 
   // set a too-long array, single array arg
   t.throws(
@@ -180,12 +222,24 @@ test('Macro methods array tests', (t) => {
 
   // Test default values
   t.ok(myTestClass.setMyProp8(), 'OK to set no argument');
-  t.ok(myTestClass.setMyProp8(1), 'OK to set not enough argument');
-  t.ok(myTestClass.setMyProp8([2, 3]), 'OK to set too-short array argument');
-  t.ok(
-    myTestClass.setMyProp8(new Float64Array(2)),
+  t.equal(
+    myTestClass.setMyProp8([]),
+    false,
+    'OK to set same empty array as argument'
+  );
+  t.equal(
+    myTestClass.setMyProp8(new Uint8Array()),
+    false,
+    'OK to set same empty typedarray as argument'
+  );
+  t.ok(myTestClass.setMyProp8(10), 'OK to set not enough argument');
+  t.equal(
+    myTestClass.setMyProp8(new Float64Array([10])),
+    false,
     'OK to set too short typed array argument'
   );
+  t.ok(myTestClass.setMyProp8([2, 3]), 'OK to set too-short array argument');
+
   t.throws(
     () => myTestClass.setMyProp8(1, 2, 3, 4),
     /RangeError/,
@@ -202,6 +256,109 @@ test('Macro methods array tests', (t) => {
     'Too large array should throw'
   );
 
+  t.throws(
+    () => newInstance({ myProp9: [] }),
+    /RangeError/,
+    'Empty array should throw'
+  );
+
+  t.equal(myTestClass.setMyProp9(null), false);
+  t.equal(myTestClass.setMyProp9([0, 1, 2]), true);
+  t.throws(
+    () => myTestClass.setMyProp9(),
+    /RangeError/,
+    'Empty array should throw'
+  );
+  t.throws(
+    () => myTestClass.setMyProp9([]),
+    /RangeError/,
+    'Empty array should throw'
+  );
+
+  t.ok(
+    myTestClass.setMyProp10([0, 1, 2]),
+    'Test setting array from undefined to unlimited size'
+  );
+  t.ok(
+    myTestClass.setMyProp10([0, 1, 2, 3]),
+    'Test setting larger array for unlimited size array'
+  );
+  t.ok(
+    myTestClass.setMyProp10([0, 1, 2]),
+    'Test setting smaller array for unlimited size array'
+  );
+
+  const a = [2, 3, 4];
+  myTestClass.setMyProp10(a);
+  t.ok(
+    myTestClass.getReferenceByName('myProp10') !== a,
+    'Test setting array make a copy'
+  );
+  a[0] = 3;
+  t.ok(
+    myTestClass.getMyProp10()[0] === 2,
+    'Test setting array do not hold reference'
+  );
+
+  t.end();
+});
+
+test('Macro protected variables tests', (t) => {
+  const defaultInstance = newInstance();
+  t.deepEqual(defaultInstance.get('_myProp11', '_myProp12', '_myProp13'), {
+    _myProp11: DEFAULT_VALUES.myProp11,
+    _myProp12: DEFAULT_VALUES._myProp12,
+    _myProp13: DEFAULT_VALUES._myProp13,
+  });
+  // getter must have been renamed
+  t.notOk(defaultInstance.get_myProp11);
+  t.notOk(defaultInstance.get_myProp12);
+  t.notOk(defaultInstance.get_myProp13);
+
+  // setter must have been renamed
+  t.notOk(defaultInstance.set_myProp11);
+  t.notOk(defaultInstance.set_myProp12);
+  t.notOk(defaultInstance.set_myProp13);
+
+  t.equal(defaultInstance.getMyProp11(), DEFAULT_VALUES.myProp11);
+  t.deepEqual(defaultInstance.getMyProp12(), DEFAULT_VALUES._myProp12);
+  t.notOk(defaultInstance.getMyProp13);
+
+  t.notOk(defaultInstance.getMyProp11ByReference);
+  t.ok(defaultInstance.getMyProp12ByReference);
+  t.notOk(defaultInstance.getMyProp11ByReference);
+
+  t.ok(defaultInstance.setMyProp11(111));
+  t.ok(defaultInstance.setMyProp12([112]));
+  t.notOk(defaultInstance.setMyProp13);
+
+  t.notOk(defaultInstance.setMyProp11From);
+  t.ok(defaultInstance.setMyProp12From);
+  t.notOk(defaultInstance.setMyProp13From);
+
+  t.equal(defaultInstance.getMyProp11(), 111);
+  t.deepEqual(defaultInstance.getMyProp12(), [112]);
+
+  const overridenInstance = newInstance({
+    myProp11: 111,
+    myProp12: [112],
+    myProp13: 113,
+  });
+  t.deepEqual(overridenInstance.get('_myProp11', '_myProp12', '_myProp13'), {
+    _myProp11: 111,
+    _myProp12: [112],
+    _myProp13: 113,
+  });
+  const overridenInstance2 = newInstance({
+    _myProp11: 111,
+    _myProp12: [112],
+    _myProp13: 113,
+  });
+  t.deepEqual(overridenInstance2.get('_myProp11', '_myProp12', '_myProp13'), {
+    _myProp11: DEFAULT_VALUES.myProp11, // TBD
+    _myProp12: [112],
+    _myProp13: 113,
+  });
   t.end();
 });
 
@@ -267,10 +424,47 @@ test('Macro methods enum tests', (t) => {
 test('Macro methods object tests', (t) => {
   const myTestClass = newInstance();
 
+  const mtime = myTestClass.getMTime();
+  t.equal(
+    myTestClass.setMyObjectProp({ foo: 1 }),
+    false,
+    'No change on same object'
+  );
+  t.equal(myTestClass.getMTime(), mtime, 'No change when setting same object');
+
+  t.equal(
+    myTestClass.setMyObjectProp({ foo: 2 }),
+    true,
+    'Change on different object'
+  );
+  t.notEqual(myTestClass.getMTime(), mtime, 'Change when setting same object');
+  t.deepEqual(
+    myTestClass.getMyObjectProp(),
+    { foo: 2 },
+    'Change on different object'
+  );
+
+  myTestClass.getMyObjectProp().foo = 3;
+  t.deepEqual(
+    myTestClass.getMyObjectProp(),
+    { foo: 2 },
+    'Getter shall return a copy'
+  );
+
+  t.end();
+});
+
+test('Macro methods object tests', (t) => {
+  const myTestClass = newInstance();
+
+  const defaultValues = { ...DEFAULT_VALUES };
+  defaultValues._myProp11 = defaultValues.myProp11;
+  delete defaultValues.myProp11;
+
   t.ok(myTestClass.get(), 'Get entire model');
   t.deepEqual(
-    myTestClass.get(...Object.keys(DEFAULT_VALUES)),
-    DEFAULT_VALUES,
+    myTestClass.get(...Object.keys(defaultValues)),
+    defaultValues,
     'Get defaults back test'
   );
 
@@ -319,6 +513,33 @@ test('Macro methods object tests', (t) => {
 
   t.doesNotThrow(() => myTestClass.delete());
   t.notOk(myTestClass.getMyProp4(), 'All calls should do nothing after delete');
+
+  t.end();
+});
+
+test('Macro methods _onPropChanged tests', (t) => {
+  const myTestClass = newInstance();
+
+  myTestClass.setMyProp8([3, 2, 1]);
+  t.equal(myTestClass.get()._onMyProp8ChangedCallsCount, 1);
+  myTestClass.setMyProp8([3, 2, 1]);
+  t.equal(myTestClass.get()._onMyProp8ChangedCallsCount, 1);
+  myTestClass.setMyProp8([2, 3, 1]);
+  t.equal(myTestClass.get()._onMyProp8ChangedCallsCount, 2);
+
+  myTestClass.setMyProp11(42);
+  t.equal(myTestClass.get()._onMyProp11ChangedCallsCount, 1);
+  myTestClass.setMyProp11(42);
+  t.equal(myTestClass.get()._onMyProp11ChangedCallsCount, 1);
+  myTestClass.setMyProp11(43);
+  t.equal(myTestClass.get()._onMyProp11ChangedCallsCount, 2);
+
+  myTestClass.setMyObjectProp({ foo: 10 });
+  t.equal(myTestClass.get()._onMyObjectPropChangedCallsCount, 1);
+  myTestClass.setMyObjectProp({ foo: 10 });
+  t.equal(myTestClass.get()._onMyObjectPropChangedCallsCount, 1);
+  myTestClass.setMyObjectProp({ bar: 10 });
+  t.equal(myTestClass.get()._onMyObjectPropChangedCallsCount, 2);
 
   t.end();
 });
@@ -427,4 +648,17 @@ test('Macro methods keystore tests', (t) => {
   );
 
   t.end();
+});
+
+test('Macro debounce can be cancelled', (t) => {
+  const func = () => {
+    t.fail('Should not call cancelled debounce function');
+  };
+
+  const debFunc = macro.debounce(func, 5);
+  debFunc();
+  debFunc.cancel();
+
+  // end the test after the debounce phase
+  setTimeout(() => t.end(), 10);
 });

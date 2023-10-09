@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkInteractorStyleTrackballCamera from 'vtk.js/Sources/Interaction/Style/InteractorStyleTrackballCamera';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
 import { States } from 'vtk.js/Sources/Rendering/Core/InteractorStyle/Constants';
@@ -51,8 +51,13 @@ function vtkInteractorStyleImage(publicAPI, model) {
       }
       publicAPI.startWindowLevel();
     } else if (model.interactionMode === 'IMAGE3D' && callData.shiftKey) {
-      // If shift is held down, do a rotation
-      publicAPI.startRotate();
+      // If ctrl+shift or alt+shift is held down, dolly the camera
+      if (callData.controlKey || callData.altKey) {
+        publicAPI.startDolly();
+      } else {
+        // If shift is held down, rotate
+        publicAPI.startRotate();
+      }
     } else if (
       model.interactionMode === 'IMAGE_SLICING' &&
       callData.controlKey
@@ -85,9 +90,8 @@ function vtkInteractorStyleImage(publicAPI, model) {
   };
 
   //--------------------------------------------------------------------------
-  publicAPI.handleStartMouseWheel = (callData) => {
+  publicAPI.handleStartMouseWheel = () => {
     publicAPI.startSlice();
-    publicAPI.handleMouseWheel(callData);
   };
 
   //--------------------------------------------------------------------------
@@ -111,13 +115,26 @@ function vtkInteractorStyleImage(publicAPI, model) {
       distance = range[1];
     }
     camera.setDistance(distance);
+    const props = callData.pokedRenderer
+      .getViewProps()
+      .filter((prop) => prop.isA('vtkImageSlice'));
+    props.forEach((prop) => {
+      if (prop.getMapper().isA('vtkImageResliceMapper')) {
+        const p = prop.getMapper().getSlicePlane();
+        if (p) {
+          p.push(callData.spinY);
+          p.modified();
+          prop.getMapper().modified();
+        }
+      }
+    });
   };
 
   //----------------------------------------------------------------------------
   publicAPI.windowLevel = (renderer, position) => {
     model.windowLevelCurrentPosition[0] = position.x;
     model.windowLevelCurrentPosition[1] = position.y;
-    const rwi = model.interactor;
+    const rwi = model._interactor;
 
     if (model.currentImageProperty) {
       const size = rwi.getView().getViewportSize(renderer);
@@ -172,7 +189,7 @@ function vtkInteractorStyleImage(publicAPI, model) {
 
   //----------------------------------------------------------------------------
   publicAPI.slice = (renderer, position) => {
-    const rwi = model.interactor;
+    const rwi = model._interactor;
 
     const dy = position.y - model.lastSlicePosition;
 
@@ -183,7 +200,7 @@ function vtkInteractorStyleImage(publicAPI, model) {
     // scale the interaction by the height of the viewport
     let viewportHeight = 0.0;
     if (camera.getParallelProjection()) {
-      viewportHeight = camera.getParallelScale();
+      viewportHeight = 2.0 * camera.getParallelScale();
     } else {
       const angle = vtkMath.radiansFromDegrees(camera.getViewAngle());
       viewportHeight = 2.0 * distance * Math.tan(0.5 * angle);
@@ -216,36 +233,26 @@ function vtkInteractorStyleImage(publicAPI, model) {
       return;
     }
 
-    const renderer = model.interactor.getCurrentRenderer();
+    const renderer = model._interactor.getCurrentRenderer();
     if (!renderer) {
       return;
     }
     model.currentImageNumber = i;
 
     function propMatch(j, prop, targetIndex) {
-      if (
-        prop.isA('vtkImageSlice') &&
-        j === targetIndex &&
-        prop.getPickable()
-      ) {
-        return true;
-      }
-      return false;
+      return j === targetIndex && prop.getNestedPickable();
     }
 
-    const props = renderer.getViewProps();
+    const props = renderer
+      .getViewProps()
+      .filter((prop) => prop.isA('vtkImageSlice'));
     let targetIndex = i;
     if (i < 0) {
       targetIndex += props.length;
     }
-    let imageProp = null;
-    let foundImageProp = false;
-    for (let j = 0; j < props.length && !foundImageProp; j++) {
-      if (propMatch(j, props[j], targetIndex)) {
-        foundImageProp = true;
-        imageProp = props[j];
-      }
-    }
+    const imageProp = props.find((prop, index) =>
+      propMatch(index, prop, targetIndex)
+    );
 
     if (imageProp) {
       publicAPI.setCurrentImageProperty(imageProp.getProperty());
@@ -267,7 +274,7 @@ const DEFAULT_VALUES = {
   windowLevelCurrentPosition: [0, 0],
   lastSlicePosition: 0,
   windowLevelInitial: [1.0, 0.5],
-  currentImageProperty: 0,
+  // currentImageProperty: null,
   currentImageNumber: -1,
   interactionMode: 'IMAGE2D',
   xViewRightVector: [0, 1, 0],
@@ -288,8 +295,9 @@ export function extend(publicAPI, model, initialValues = {}) {
 
   // Create get-set macros
   macro.setGet(publicAPI, model, ['interactionMode']);
+  macro.get(publicAPI, model, ['currentImageProperty']);
 
-  // For more macro methods, see "Sources/macro.js"
+  // For more macro methods, see "Sources/macros.js"
 
   // Object specific methods
   vtkInteractorStyleImage(publicAPI, model);

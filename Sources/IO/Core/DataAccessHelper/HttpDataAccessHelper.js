@@ -1,6 +1,6 @@
-import pako from 'pako';
+import { decompressSync, strFromU8 } from 'fflate';
 
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import Endian from 'vtk.js/Sources/Common/Core/Endian';
 import { DataTypeByteSize } from 'vtk.js/Sources/Common/Core/DataArray/Constants';
 import { registerType } from 'vtk.js/Sources/IO/Core/DataAccessHelper';
@@ -29,13 +29,22 @@ function openAsyncXHR(method, url, options = {}) {
 }
 
 function fetchBinary(url, options = {}) {
+  if (options && options.compression && options.compression !== 'gz') {
+    vtkErrorMacro('Supported algorithms are: [gz]');
+    vtkErrorMacro(`Unkown compression algorithm: ${options.compression}`);
+  }
+
   return new Promise((resolve, reject) => {
     const xhr = openAsyncXHR('GET', url, options);
 
     xhr.onreadystatechange = (e) => {
       if (xhr.readyState === 4) {
         if (xhr.status === 200 || xhr.status === 0) {
-          resolve(xhr.response);
+          if (options.compression) {
+            resolve(decompressSync(new Uint8Array(xhr.response)).buffer);
+          } else {
+            resolve(xhr.response);
+          }
         } else {
           reject({ xhr, e });
         }
@@ -48,20 +57,27 @@ function fetchBinary(url, options = {}) {
   });
 }
 
-function fetchArray(instance = {}, baseURL, array, options = {}) {
+function fetchArray(instance, baseURL, array, options = {}) {
   if (array.ref && !array.ref.pending) {
     return new Promise((resolve, reject) => {
-      const url = [
-        baseURL,
-        array.ref.basepath,
-        options.compression ? `${array.ref.id}.gz` : array.ref.id,
-      ].join('/');
+      let url = null;
+
+      if (array.ref.url) {
+        url = array.ref.url;
+      } else {
+        url = [
+          baseURL,
+          array.ref.basepath,
+          options.compression ? `${array.ref.id}.gz` : array.ref.id,
+        ].join('/');
+      }
+
       const xhr = openAsyncXHR('GET', url, options);
 
       xhr.onreadystatechange = (e) => {
         if (xhr.readyState === 1) {
           array.ref.pending = true;
-          if (++requestCount === 1 && instance.invokeBusy) {
+          if (++requestCount === 1 && instance?.invokeBusy) {
             instance.invokeBusy(true);
           }
         }
@@ -72,11 +88,11 @@ function fetchArray(instance = {}, baseURL, array, options = {}) {
 
             if (options.compression) {
               if (array.dataType === 'string' || array.dataType === 'JSON') {
-                array.buffer = pako.inflate(new Uint8Array(array.buffer), {
-                  to: 'string',
-                });
+                array.buffer = strFromU8(
+                  decompressSync(new Uint8Array(array.buffer))
+                );
               } else {
-                array.buffer = pako.inflate(
+                array.buffer = decompressSync(
                   new Uint8Array(array.buffer)
                 ).buffer;
               }
@@ -105,10 +121,10 @@ function fetchArray(instance = {}, baseURL, array, options = {}) {
 
             // Done with the ref and work
             delete array.ref;
-            if (--requestCount === 0 && instance.invokeBusy) {
+            if (--requestCount === 0 && instance?.invokeBusy) {
               instance.invokeBusy(false);
             }
-            if (instance.modified) {
+            if (instance?.modified) {
               instance.modified();
             }
             resolve(array);
@@ -132,25 +148,25 @@ function fetchArray(instance = {}, baseURL, array, options = {}) {
 
 // ----------------------------------------------------------------------------
 
-function fetchJSON(instance = {}, url, options = {}) {
+function fetchJSON(instance, url, options = {}) {
   return new Promise((resolve, reject) => {
     const xhr = openAsyncXHR('GET', url, options);
 
     xhr.onreadystatechange = (e) => {
       if (xhr.readyState === 1) {
-        if (++requestCount === 1 && instance.invokeBusy) {
+        if (++requestCount === 1 && instance?.invokeBusy) {
           instance.invokeBusy(true);
         }
       }
       if (xhr.readyState === 4) {
-        if (--requestCount === 0 && instance.invokeBusy) {
+        if (--requestCount === 0 && instance?.invokeBusy) {
           instance.invokeBusy(false);
         }
         if (xhr.status === 200 || xhr.status === 0) {
           if (options.compression) {
             resolve(
               JSON.parse(
-                pako.inflate(new Uint8Array(xhr.response), { to: 'string' })
+                strFromU8(decompressSync(new Uint8Array(xhr.response)))
               )
             );
           } else {
@@ -170,7 +186,7 @@ function fetchJSON(instance = {}, url, options = {}) {
 
 // ----------------------------------------------------------------------------
 
-function fetchText(instance = {}, url, options = {}) {
+function fetchText(instance, url, options = {}) {
   if (options && options.compression && options.compression !== 'gz') {
     vtkErrorMacro('Supported algorithms are: [gz]');
     vtkErrorMacro(`Unkown compression algorithm: ${options.compression}`);
@@ -181,19 +197,17 @@ function fetchText(instance = {}, url, options = {}) {
 
     xhr.onreadystatechange = (e) => {
       if (xhr.readyState === 1) {
-        if (++requestCount === 1 && instance.invokeBusy) {
+        if (++requestCount === 1 && instance?.invokeBusy) {
           instance.invokeBusy(true);
         }
       }
       if (xhr.readyState === 4) {
-        if (--requestCount === 0 && instance.invokeBusy) {
+        if (--requestCount === 0 && instance?.invokeBusy) {
           instance.invokeBusy(false);
         }
         if (xhr.status === 200 || xhr.status === 0) {
           if (options.compression) {
-            resolve(
-              pako.inflate(new Uint8Array(xhr.response), { to: 'string' })
-            );
+            resolve(strFromU8(decompressSync(new Uint8Array(xhr.response))));
           } else {
             resolve(xhr.responseText);
           }
@@ -211,7 +225,7 @@ function fetchText(instance = {}, url, options = {}) {
 
 // ----------------------------------------------------------------------------
 
-function fetchImage(instance = {}, url, options = {}) {
+function fetchImage(instance, url, options = {}) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     if (options.crossOrigin) {

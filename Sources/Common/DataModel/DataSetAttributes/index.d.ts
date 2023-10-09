@@ -1,5 +1,5 @@
 import { vtkObject } from "../../../interfaces" ;
-import { vtkFieldData } from './FieldData';
+import { IFieldDataInitialValues, vtkFieldData } from './FieldData';
 import vtkDataArray from '../../Core/DataArray';
 
 export enum AttributeTypes {
@@ -88,7 +88,7 @@ export enum DesiredOutputPrecision {
 /**
  *
  */
-interface IDataSetAttributesInitialValues {
+export interface IDataSetAttributesInitialValues extends IFieldDataInitialValues {
 	activeScalars?: number;
 	activeVectors?: number;
 	activeTensors?: number;
@@ -111,6 +111,14 @@ export interface vtkDataSetAttributes extends vtkFieldData {
 	 * @param {string} attType
 	 */
 	getActiveAttribute(attType: string): any;
+
+	/**
+	 * Get a list of attribute names that the given array 
+	 * is for this vtkDataSetAttributes.
+	 * @param {vtkDataArray} arr
+	 * @returns {String[]}
+	 */
+	getAttributes(arr: vtkDataArray): string[];
 
 	/**
 	 *
@@ -363,6 +371,41 @@ export interface vtkDataSetAttributes extends vtkFieldData {
 	/**
 	 *
 	 */
+	copyScalarsOn(): void;
+
+	/**
+	 *
+	 */
+	copyVectorsOn(): void;
+
+	/**
+	 *
+	 */
+	copyNormalsOn(): void;
+
+	/**
+	 *
+	 */
+	copyTCoordsOn(): void;
+
+	/**
+	 *
+	 */
+	copyTensorsOn(): void;
+
+	/**
+	 *
+	 */
+	copyGlobalIdsOn(): void;
+
+	/**
+	 *
+	 */
+	copyPedigreeIdsOn(): void;
+
+	/**
+	 *
+	 */
 	copyScalarsOff(): void;
 
 	/**
@@ -394,6 +437,7 @@ export interface vtkDataSetAttributes extends vtkFieldData {
 	 *
 	 */
 	copyPedigreeIdsOff(): void;
+
 }
 
 /**

@@ -1,9 +1,12 @@
-import { Bounds } from "../../../types";
-import vtkProp3D from "../Prop3D";
+import { Bounds, Nullable } from "../../../types";
+import vtkProp3D, { IProp3DInitialValues } from "../Prop3D";
 import vtkVolumeMapper from "../VolumeMapper";
-import vtkVolumeProperty from "../VolumeProperty";
+import vtkVolumeProperty, { IVolumePropertyInitialValues } from "../VolumeProperty";
 
-interface IVolumeInitialValues {
+/**
+ * 
+ */
+export interface IVolumeInitialValues extends IProp3DInitialValues {
 	mapper?: vtkVolumeMapper;
 	property?: vtkVolumeProperty;
 	bounds?: Bounds;
@@ -17,7 +20,7 @@ export interface vtkVolume extends vtkProp3D {
 	/**
 	 * Get the volume mapper
 	 */
-	getMapper(): vtkVolumeMapper;
+	getMapper(): Nullable<vtkVolumeMapper>;
 
 	/**
 	 * For some exporters and other other operations we must be able to collect
@@ -60,9 +63,10 @@ export interface vtkVolume extends vtkProp3D {
 	getRedrawMTime(): number;
 
 	/**
-	 * 
+	 * Create a new property suitable for use with this type of Actor.
+	 * @param {IVolumePropertyInitialValues} [initialValues] (default: {})
 	 */
-	makeProperty(): void;
+	makeProperty(initialValues?: IVolumePropertyInitialValues): vtkVolumeProperty;
 
 	/**
 	 * Set the volume mapper
@@ -118,6 +122,15 @@ export function newInstance(initialValues?: IVolumeInitialValues): vtkVolume;
  * 
  * @example
  * ```js
+ * // Load the rendering pieces we want to use (for both WebGL and WebGPU)
+ * import 'vtk.js/Sources/Rendering/Profiles/Volume';
+ * 
+ * import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
+ * import vtkHttpDataSetReader from '@kitware/vtk.js/IO/Core/HttpDataSetReader';
+ * 
+ * import vtkVolume from '@kitware/vtk.js/Rendering/Core/Volume';
+ * import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
+
  * const vol = vtkVolume.newInstance();
  * const mapper = vtkVolumeMapper.newInstance();
  * mapper.setSampleDistance(2.0);

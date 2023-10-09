@@ -1,25 +1,6 @@
-import { Bounds } from "../../../types";
-import vtkAbstractMapper3D from "../AbstractMapper3D";
-
-export enum ColorMode {
-	DEFAULT,
-	MAP_SCALARS,
-	DIRECT_SCALARS,
-}
-
-export enum ScalarMode {
-	DEFAULT,
-	USE_POINT_DATA,
-	USE_CELL_DATA,
-	USE_POINT_FIELD_DATA,
-	USE_CELL_FIELD_DATA,
-	USE_FIELD_DATA,
-}
-
-export enum GetArray {
-	BY_ID,
-	BY_NAME,
-}
+import { Bounds, Nullable, Range } from "../../../types";
+import vtkAbstractMapper3D, { IAbstractMapper3DInitialValues } from "../AbstractMapper3D";
+import { ColorMode, GetArray, ScalarMode } from "./Constants";
 
 interface IPrimitiveCount {
 	points: number;
@@ -32,7 +13,6 @@ interface IAbstractScalars {
 	cellFlag: boolean;
 }
 
-
 interface ICoincidentTopology {
 	factor: number;
 	offset: number;
@@ -43,10 +23,10 @@ interface IScalarToTextureCoordinate {
 	texCoordT: number;
 }
 
-interface IMapperInitialValues {
+export interface IMapperInitialValues extends IAbstractMapper3DInitialValues{
 	static?: boolean;
 	scalarVisibility?: boolean;
-	scalarRange?: number[];
+	scalarRange?: Range;
 	useLookupTableScalarRange?: boolean;
 	colorMode?: number;
 	scalarMode?: number;
@@ -152,22 +132,22 @@ export interface vtkMapper extends vtkAbstractMapper3D {
 	/**
 	 * Get the array name to color by.
 	 */
-	getColorByArrayName(): string | null;
+	getColorByArrayName(): Nullable<string>;
 
 	/**
 	 * Provide read access to the color texture coordinate array
 	 */
-	getColorCoordinates(): Float32Array | null;
+	getColorCoordinates(): Nullable<Float32Array>;
 
 	/**
 	 * Provide read access to the color array.
 	 */
-	getColorMapColors(): Uint8Array | null;
+	getColorMapColors(): Nullable<Uint8Array>;
 
 	/**
 	 * Return the method of coloring scalar data.
 	 */
-	getColorMode(): number;
+	getColorMode(): ColorMode;
 
 	/**
 	 * Return the method of coloring scalar data.
@@ -500,6 +480,15 @@ export interface vtkMapper extends vtkAbstractMapper3D {
 	 *
 	 */
 	valueToColor(): void;
+
+	/**
+	 *
+	 */
+	setInterpolateScalarsBeforeMapping(interpolateScalarsBeforeMapping: boolean): boolean;
+
+	setResolveCoincidentTopologyToPolygonOffset(): boolean;
+
+	setResolveCoincidentTopologyToOff(): boolean;
 }
 
 /**
@@ -639,5 +628,8 @@ export declare const vtkMapper: {
 	getResolveCoincidentTopologyLineOffsetParameters: typeof getResolveCoincidentTopologyLineOffsetParameters;
 	getResolveCoincidentTopologyPointOffsetParameters: typeof getResolveCoincidentTopologyPointOffsetParameters;
 	getResolveCoincidentTopologyPolygonOffsetParameters: typeof getResolveCoincidentTopologyPolygonOffsetParameters;
+	ColorMode: typeof ColorMode;
+	ScalarMode: typeof ScalarMode;
+	GetArray: typeof GetArray;
 }
 export default vtkMapper;

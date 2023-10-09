@@ -1,5 +1,5 @@
 import DataAccessHelper from 'vtk.js/Sources/IO/Core/DataAccessHelper';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkCellArray from 'vtk.js/Sources/Common/Core/CellArray';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkPolyData from 'vtk.js/Sources/Common/DataModel/PolyData';
@@ -36,8 +36,14 @@ function setWasmBinary(url, binaryName) {
     xhr.onload = () => {
       if (xhr.status === 200) {
         dracoDecoderType.wasmBinary = xhr.response;
-        decoderModule = window.DracoDecoderModule(dracoDecoderType);
-        resolve(true);
+        // Use Promise.resolve to be compatible with versions before Draco 1.4.0
+        Promise.resolve(window.DracoDecoderModule(dracoDecoderType)).then(
+          (module) => {
+            decoderModule = module;
+            resolve(true);
+          },
+          reject
+        );
       } else {
         reject(Error(`WASM binary could not be loaded: ${xhr.statusText}`));
       }

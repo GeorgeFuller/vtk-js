@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkCompositeCameraManipulator from 'vtk.js/Sources/Interaction/Manipulators/CompositeCameraManipulator';
 import vtkCompositeMouseManipulator from 'vtk.js/Sources/Interaction/Manipulators/CompositeMouseManipulator';
 import vtkMouseCameraTrackballRotateManipulator from 'vtk.js/Sources/Interaction/Manipulators/MouseCameraTrackballRotateManipulator';
@@ -20,12 +20,13 @@ function vtkMouseCameraTrackballMultiRotateManipulator(publicAPI, model) {
   // Set our className
   model.classHierarchy.push('vtkMouseCameraTrackballMultiRotateManipulator');
 
-  const rotateManipulator = vtkMouseCameraTrackballRotateManipulator.newInstance();
+  const rotateManipulator =
+    vtkMouseCameraTrackballRotateManipulator.newInstance();
   const rollManipulator = vtkMouseCameraTrackballRollManipulator.newInstance();
   let currentManipulator = null;
 
   publicAPI.onButtonDown = (interactor, renderer, position) => {
-    const viewSize = interactor.getView().getSize();
+    const viewSize = interactor.getView().getViewportSize(renderer);
     const viewCenter = [0.5 * viewSize[0], 0.5 * viewSize[1]];
     const rotateRadius = 0.9 * max(viewCenter[0], viewCenter[1]);
     const dist2 =

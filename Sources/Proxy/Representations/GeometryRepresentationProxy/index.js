@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 
@@ -79,6 +79,7 @@ export function extend(publicAPI, model, initialValues = {}) {
     },
     pointSize: { modelKey: 'property', property: 'pointSize' },
     useShadow: { modelKey: 'property', property: 'lighting' },
+    lineWidth: { modelKey: 'property', property: 'lineWidth' },
     useBounds: { modelKey: 'actor', property: 'useBounds' },
   });
 }

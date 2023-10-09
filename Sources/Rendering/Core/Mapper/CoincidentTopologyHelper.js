@@ -1,6 +1,6 @@
 /* eslint-disable arrow-body-style */
 import otherStaticMethods from 'vtk.js/Sources/Rendering/Core/Mapper/Static';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 function addCoincidentTopologyMethods(publicAPI, model, nameList) {
   nameList.forEach((item) => {
@@ -63,8 +63,10 @@ function implementCoincidentTopologyMethods(publicAPI, model) {
   );
 
   publicAPI.getCoincidentTopologyPolygonOffsetParameters = () => {
-    const globalValue = staticOffsetAPI.getResolveCoincidentTopologyPolygonOffsetParameters();
-    const localValue = publicAPI.getRelativeCoincidentTopologyPolygonOffsetParameters();
+    const globalValue =
+      staticOffsetAPI.getResolveCoincidentTopologyPolygonOffsetParameters();
+    const localValue =
+      publicAPI.getRelativeCoincidentTopologyPolygonOffsetParameters();
     return {
       factor: globalValue.factor + localValue.factor,
       offset: globalValue.offset + localValue.offset,
@@ -72,8 +74,10 @@ function implementCoincidentTopologyMethods(publicAPI, model) {
   };
 
   publicAPI.getCoincidentTopologyLineOffsetParameters = () => {
-    const globalValue = staticOffsetAPI.getResolveCoincidentTopologyLineOffsetParameters();
-    const localValue = publicAPI.getRelativeCoincidentTopologyLineOffsetParameters();
+    const globalValue =
+      staticOffsetAPI.getResolveCoincidentTopologyLineOffsetParameters();
+    const localValue =
+      publicAPI.getRelativeCoincidentTopologyLineOffsetParameters();
     return {
       factor: globalValue.factor + localValue.factor,
       offset: globalValue.offset + localValue.offset,
@@ -81,8 +85,10 @@ function implementCoincidentTopologyMethods(publicAPI, model) {
   };
 
   publicAPI.getCoincidentTopologyPointOffsetParameter = () => {
-    const globalValue = staticOffsetAPI.getResolveCoincidentTopologyPointOffsetParameters();
-    const localValue = publicAPI.getRelativeCoincidentTopologyPointOffsetParameters();
+    const globalValue =
+      staticOffsetAPI.getResolveCoincidentTopologyPointOffsetParameters();
+    const localValue =
+      publicAPI.getRelativeCoincidentTopologyPointOffsetParameters();
     return {
       factor: globalValue.factor + localValue.factor,
       offset: globalValue.offset + localValue.offset,

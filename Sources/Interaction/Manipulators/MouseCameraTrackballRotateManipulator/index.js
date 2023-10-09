@@ -1,5 +1,5 @@
 import { vec3, mat4 } from 'gl-matrix';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkCompositeCameraManipulator from 'vtk.js/Sources/Interaction/Manipulators/CompositeCameraManipulator';
 import vtkCompositeMouseManipulator from 'vtk.js/Sources/Interaction/Manipulators/CompositeMouseManipulator';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
@@ -37,22 +37,55 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 
     const { center, rotationFactor } = model;
 
-    // Translate to center
-    mat4.translate(trans, trans, center);
+    if (model.useFocalPointAsCenterOfRotation) {
+      center[0] = cameraFp[0];
+      center[1] = cameraFp[1];
+      center[2] = cameraFp[2];
+    }
 
     const dx = model.previousPosition.x - position.x;
     const dy = model.previousPosition.y - position.y;
 
-    const size = interactor.getView().getSize();
+    const size = interactor.getView().getViewportSize(renderer);
 
     // Azimuth
     const viewUp = camera.getViewUp();
-    mat4.rotate(
-      trans,
-      trans,
-      vtkMath.radiansFromDegrees(((360.0 * dx) / size[0]) * rotationFactor),
-      viewUp
-    );
+    if (model.useWorldUpVec) {
+      const centerOfRotation = new Float64Array(3);
+      vec3.copy(centerOfRotation, model.worldUpVec);
+
+      // Compute projection of cameraPos onto worldUpVec
+      vtkMath.multiplyScalar(
+        centerOfRotation,
+        vtkMath.dot(cameraPos, model.worldUpVec) /
+          vtkMath.dot(model.worldUpVec, model.worldUpVec)
+      );
+
+      vtkMath.add(center, centerOfRotation, centerOfRotation);
+
+      mat4.translate(trans, trans, centerOfRotation);
+      mat4.rotate(
+        trans,
+        trans,
+        vtkMath.radiansFromDegrees(((360.0 * dx) / size[0]) * rotationFactor),
+        model.worldUpVec
+      );
+
+      // Translate back
+      centerOfRotation[0] = -centerOfRotation[0];
+      centerOfRotation[1] = -centerOfRotation[1];
+      centerOfRotation[2] = -centerOfRotation[2];
+      mat4.translate(trans, trans, centerOfRotation);
+      mat4.translate(trans, trans, center);
+    } else {
+      mat4.translate(trans, trans, center);
+      mat4.rotate(
+        trans,
+        trans,
+        vtkMath.radiansFromDegrees(((360.0 * dx) / size[0]) * rotationFactor),
+        viewUp
+      );
+    }
 
     // Elevation
     vtkMath.cross(camera.getDirectionOfProjection(), viewUp, v2);
@@ -100,7 +133,12 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 // Object factory
 // ----------------------------------------------------------------------------
 
-const DEFAULT_VALUES = {};
+const DEFAULT_VALUES = {
+  useWorldUpVec: false,
+  // set WorldUpVector to be y-axis by default
+  worldUpVec: [0, 1, 0],
+  useFocalPointAsCenterOfRotation: false,
+};
 
 // ----------------------------------------------------------------------------
 
@@ -111,6 +149,11 @@ export function extend(publicAPI, model, initialValues = {}) {
   macro.obj(publicAPI, model);
   vtkCompositeMouseManipulator.extend(publicAPI, model, initialValues);
   vtkCompositeCameraManipulator.extend(publicAPI, model, initialValues);
+
+  // Create get-set macro
+  macro.setGet(publicAPI, model, ['useWorldUpVec']);
+  macro.setGetArray(publicAPI, model, ['worldUpVec'], 3);
+  macro.setGet(publicAPI, model, ['useFocalPointAsCenterOfRotation']);
 
   // Object specific methods
   vtkMouseCameraTrackballRotateManipulator(publicAPI, model);

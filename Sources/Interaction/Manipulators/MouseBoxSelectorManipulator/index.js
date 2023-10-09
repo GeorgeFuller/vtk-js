@@ -1,4 +1,4 @@
-import * as macro from 'vtk.js/Sources/macro';
+import * as macro from 'vtk.js/Sources/macros';
 import vtkCompositeMouseManipulator from 'vtk.js/Sources/Interaction/Manipulators/CompositeMouseManipulator';
 
 const OUTSIDE_BOUNDS = [-2, -1, -2, -1];
@@ -70,8 +70,12 @@ function vtkMouseBoxSelectionManipulator(publicAPI, model) {
         view = interactor.getView();
       }
 
-      if (!container && view) {
+      if (!container && view?.getContainer) {
         container = view.getContainer();
+      }
+
+      if (!container) {
+        container = model.container;
       }
 
       if (!div) {
@@ -114,8 +118,13 @@ function vtkMouseBoxSelectionManipulator(publicAPI, model) {
   //-------------------------------------------------------------------------
 
   publicAPI.onButtonUp = (interactor, renderer) => {
-    if (!previousPosition || !currentPosition) {
+    if (!previousPosition || (!currentPosition && !model.boxChangeOnClick)) {
       return;
+    }
+
+    // needed because of boxChangeOnClick
+    if (!currentPosition) {
+      currentPosition = previousPosition;
     }
 
     publicAPI.invokeBoxSelectChange({
@@ -143,6 +152,8 @@ function vtkMouseBoxSelectionManipulator(publicAPI, model) {
 
 function DEFAULT_VALUES(initialValues) {
   return {
+    // container: null,
+    boxChangeOnClick: false,
     renderSelection: true,
     ...initialValues,
     selectionStyle: {
@@ -162,7 +173,12 @@ export function extend(publicAPI, model, initialValues = {}) {
   vtkCompositeMouseManipulator.extend(publicAPI, model, initialValues);
   macro.event(publicAPI, model, 'BoxSelectChange'); // Trigger at release
   macro.event(publicAPI, model, 'BoxSelectInput'); // Trigger while dragging
-  macro.setGet(publicAPI, model, ['renderSelection', 'selectionStyle']);
+  macro.setGet(publicAPI, model, [
+    'renderSelection',
+    'boxChangeOnClick',
+    'selectionStyle',
+    'container',
+  ]);
 
   // Object specific methods
   vtkMouseBoxSelectionManipulator(publicAPI, model);

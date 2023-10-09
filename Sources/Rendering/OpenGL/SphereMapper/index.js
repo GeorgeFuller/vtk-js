@@ -1,7 +1,7 @@
 import { mat4 } from 'gl-matrix';
 import { ObjectType } from 'vtk.js/Sources/Rendering/OpenGL/BufferObject/Constants';
 
-import * as macro from 'vtk.js/Sources/macro';
+import * as macro from 'vtk.js/Sources/macros';
 
 import vtkBufferObject from 'vtk.js/Sources/Rendering/OpenGL/BufferObject';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
@@ -73,7 +73,7 @@ function vtkOpenGLSphereMapper(publicAPI, model) {
     if (model.context.getExtension('EXT_frag_depth')) {
       fragString = 'gl_FragDepthEXT = (pos.z / pos.w + 1.0) / 2.0;\n';
     }
-    if (model.openGLRenderWindow.getWebgl2()) {
+    if (model._openGLRenderWindow.getWebgl2()) {
       fragString = 'gl_FragDepth = (pos.z / pos.w + 1.0) / 2.0;\n';
     }
     FSSource = vtkShaderProgram.substitute(FSSource, '//VTK::Depth::Impl', [
@@ -120,8 +120,11 @@ function vtkOpenGLSphereMapper(publicAPI, model) {
     ]).result;
 
     // Strip out the normal line -- the normal is computed as part of the depth
-    FSSource = vtkShaderProgram.substitute(FSSource, '//VTK::Normal::Impl', '')
-      .result;
+    FSSource = vtkShaderProgram.substitute(
+      FSSource,
+      '//VTK::Normal::Impl',
+      ''
+    ).result;
 
     if (model.haveSeenDepthRequest) {
       // special depth impl
@@ -169,6 +172,21 @@ function vtkOpenGLSphereMapper(publicAPI, model) {
       cellBO
         .getProgram()
         .setUniformf('invertedDepth', model.invert ? -1.0 : 1.0);
+    }
+    if (cellBO.getProgram().isUniformUsed('scaleFactor')) {
+      // apply scaling factor only if a scale array has been provided.
+      const poly = model.currentInput;
+      const pointData = poly.getPointData();
+      if (
+        model.renderable.getScaleArray() != null &&
+        pointData.hasArray(model.renderable.getScaleArray())
+      ) {
+        cellBO
+          .getProgram()
+          .setUniformf('scaleFactor', model.renderable.getScaleFactor());
+      } else {
+        cellBO.getProgram().setUniformf('scaleFactor', 1.0);
+      }
     }
 
     superClass.setMapperShaderParameters(cellBO, ren, actor);
@@ -243,7 +261,7 @@ function vtkOpenGLSphereMapper(publicAPI, model) {
       if (!vbo.getColorBO()) {
         vbo.setColorBO(vtkBufferObject.newInstance());
       }
-      vbo.getColorBO().setOpenGLRenderWindow(model.openGLRenderWindow);
+      vbo.getColorBO().setOpenGLRenderWindow(model._openGLRenderWindow);
     } else if (vbo.getColorBO()) {
       vbo.setColorBO(null);
     }

@@ -1,14 +1,17 @@
 import { vtkAlgorithm, vtkObject } from "../../../interfaces";
+import { Vector3 } from "../../../types";
 
 /**
  *
  */
-interface ICylinderSourceInitialValues {
+export interface ICylinderSourceInitialValues {
 	height?: number;
+	initAngle?: number;
+	otherRadius?: number;
 	radius?: number;
 	resolution?: number;
-	center?: number[];
-	direction?: number[];
+	center?: Vector3;
+	direction?: Vector3;
 	capping?: boolean;
 	pointType?: string;
 }
@@ -33,23 +36,23 @@ export interface vtkCylinderSource extends vtkCylinderSourceBase {
 	 * Get the center of the cylinder.
 	 * @default [0, 0, 0]
 	 */
-	getCenter(): number[];
+	getCenter(): Vector3;
 
 	/**
 	 * Get the center of the cylinder.
 	 */
-	getCenterByReference(): number[];
+	getCenterByReference(): Vector3;
 
 	/**
 	 * Get the orientation vector of the cylinder.
 	 * @default [1.0, 0.0, 0.0]
 	 */
-	getDirection(): number[];
+	getDirection(): Vector3;
 
 	/**
 	 * Get the orientation vector of the cylinder.
 	 */
-	getDirectionByReference(): number[];
+	getDirectionByReference(): Vector3;
 
 	/**
 	 * Get the height of the cylinder.
@@ -58,8 +61,24 @@ export interface vtkCylinderSource extends vtkCylinderSourceBase {
 	getHeight(): number;
 
 	/**
+	 * Get the initial angle along direction
+	 * @default 0
+	 * @see getDirection
+	 */
+	getInitAngle(): number;
+
+	/**
+	 * Get the radius on Z axis. If not null and different from radius,
+	 * the cylinder base becomes an ellipse instead of a circle.
+	 * @default null
+	 * @see getRadius()
+	 */
+	getOtherRadius(): number;
+
+	/**
 	 * Get the base radius of the cylinder.
 	 * @default 0.5
+	 * @see getOtherRadius()
 	 */
 	getRadius(): number;
 
@@ -93,10 +112,10 @@ export interface vtkCylinderSource extends vtkCylinderSourceBase {
 
 	/**
 	 * Set the center of the cylinder.
-	 * @param {Number[]} center The center point's coordinates.
+	 * @param {Vector3} center The center point's coordinates.
 	 * @default [0, 0, 0]
 	 */
-	setCenterFrom(center: number[]): boolean;
+	setCenterFrom(center: Vector3): boolean;
 
 	/**
 	 * Set the direction for the cylinder.
@@ -108,15 +127,15 @@ export interface vtkCylinderSource extends vtkCylinderSourceBase {
 
 	/**
 	 * Set the direction for the cylinder.
-	 * @param {Number[]} direction The direction coordinates.
+	 * @param {Vector3} direction The direction coordinates.
 	 */
-	setDirection(direction: number[]): boolean;
+	setDirection(direction: Vector3): boolean;
 
 	/**
 	 * Set the direction for the cylinder.
-	 * @param {Number[]} direction The direction coordinates.
+	 * @param {Vector3} direction The direction coordinates.
 	 */
-	setDirectionFrom(direction: number[]): boolean;
+	setDirectionFrom(direction: Vector3): boolean;
 
 	/**
 	 * Set the height of the cylinder.
@@ -125,8 +144,22 @@ export interface vtkCylinderSource extends vtkCylinderSourceBase {
 	setHeight(height: number): boolean;
 
 	/**
+	 * Set the initial angle along direction.
+	 * @param {Number} initAngle The initial angle in radian.
+	 */
+	setInitAngle(initAngle: number): boolean;
+
+	/**
+	 * Set the base Z radius of the cylinder.
+	 * @param {Number} radius The radius of the cylinder in Z.
+	 * @see setRadius()
+	 */
+	setOtherRadius(radius: number): boolean;
+
+	/**
 	 * Set the base radius of the cylinder.
 	 * @param {Number} radius The radius of the cylinder.
+	 * @see setOtherRadius()
 	 */
 	setRadius(radius: number): boolean;
 
@@ -135,6 +168,7 @@ export interface vtkCylinderSource extends vtkCylinderSourceBase {
 	 * @param {Number} resolution The number of facets used to represent the cylinder.
 	 */
 	setResolution(resolution: number): boolean;
+
 }
 
 /**
@@ -161,7 +195,7 @@ export function newInstance(initialValues?: ICylinderSourceInitialValues): vtkCy
  * 
  * @example
  * ```js
- * import vtkCylinderSource from 'vtk.js/Sources/Filters/Sources/CylinderSource';
+ * import vtkCylinderSource from '@kitware/vtk.js/Filters/Sources/CylinderSource';
  * 
  * const cylinder = vtkCylinderSource.newInstance({ height: 2, radius: 1, resolution: 80 });
  * const polydata = cylinder.getOutputData();

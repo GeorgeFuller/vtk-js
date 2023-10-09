@@ -1,6 +1,6 @@
 import test from 'tape-catch';
 
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
 import vtkImageStreamline from 'vtk.js/Sources/Filters/General/ImageStreamline';
@@ -97,8 +97,8 @@ test('Test vtkImageStreamline execution', (t) => {
   );
   t.equal(
     output.getPoints().getNumberOfPoints(),
-    2228,
-    'The number of points should be 2228'
+    2324,
+    'The number of points should be 2324'
   );
 
   t.end();

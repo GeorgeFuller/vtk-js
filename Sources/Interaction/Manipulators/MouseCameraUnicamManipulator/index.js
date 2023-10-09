@@ -3,7 +3,7 @@ import vtkCompositeMouseManipulator from 'vtk.js/Sources/Interaction/Manipulator
 import vtkInteractorStyleConstants from 'vtk.js/Sources/Rendering/Core/InteractorStyle/Constants';
 import vtkMouseCameraUnicamRotateManipulator from 'vtk.js/Sources/Interaction/Manipulators/MouseCameraUnicamRotateManipulator';
 
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
 
 const { States } = vtkInteractorStyleConstants;
@@ -30,7 +30,8 @@ function vtkMouseCameraUnicamManipulator(publicAPI, model) {
 
   //----------------------------------------------------------------------------
   const normalize = (position, interactor) => {
-    const [width, height] = interactor.getView().getSize();
+    const renderer = interactor.findPokedRenderer();
+    const [width, height] = interactor.getView().getViewportSize(renderer);
 
     const nx = -1.0 + (2.0 * position.x) / width;
     const ny = -1.0 + (2.0 * position.y) / height;
@@ -59,10 +60,11 @@ function vtkMouseCameraUnicamManipulator(publicAPI, model) {
     // Get shortest distance 'l' between the viewing position and
     // plane parallel to the projection plane that contains the 'downPoint'.
     const atV = camera.getViewPlaneNormal();
-    vtkMath.normalize(atV, interactor);
+    vtkMath.normalize(atV);
     const l = vtkMath.dot(cameraToPointVec, atV);
     const viewAngle = vtkMath.radiansFromDegrees(camera.getViewAngle());
-    const [width, height] = interactor.getView().getSize();
+    const renderer = interactor.findPokedRenderer();
+    const [width, height] = interactor.getView().getViewportSize(renderer);
 
     const scaleX = (width / height) * ((2 * l * Math.tan(viewAngle / 2)) / 2);
     const scaleY = (2 * l * Math.tan(viewAngle / 2)) / 2;
@@ -73,8 +75,8 @@ function vtkMouseCameraUnicamManipulator(publicAPI, model) {
     vtkMath.cross(upV, atV, rightV);
     // (Make sure 'upV' is orthogonal to 'atV' & 'rightV')
     vtkMath.cross(atV, rightV, upV);
-    vtkMath.normalize(rightV, interactor);
-    vtkMath.normalize(upV, interactor);
+    vtkMath.normalize(rightV);
+    vtkMath.normalize(upV);
 
     vtkMath.multiplyScalar(rightV, scaleX);
     vtkMath.multiplyScalar(upV, scaleY);

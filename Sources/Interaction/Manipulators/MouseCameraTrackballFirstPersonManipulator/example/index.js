@@ -1,16 +1,16 @@
-import 'vtk.js/Sources/favicon';
+import '@kitware/vtk.js/favicon';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import 'vtk.js/Sources/Rendering/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 
-import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
-import vtkElevationReader from 'vtk.js/Sources/IO/Misc/ElevationReader';
-import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-import vtkInteractorStyleManipulator from 'vtk.js/Sources/Interaction/Style/InteractorStyleManipulator';
-import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
-import vtkTexture from 'vtk.js/Sources/Rendering/Core/Texture';
+import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
+import vtkElevationReader from '@kitware/vtk.js/IO/Misc/ElevationReader';
+import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
+import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
+import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+import vtkTexture from '@kitware/vtk.js/Rendering/Core/Texture';
 
-import Manipulators from 'vtk.js/Sources/Interaction/Manipulators';
+import Manipulators from '@kitware/vtk.js/Interaction/Manipulators';
 
 // ----------------------------------------------------------------------------
 // Standard rendering code setup
@@ -48,15 +48,11 @@ img.src = `${__BASE_PATH__}/data/elevation/dem.jpg`;
 
 // The default camera is just a nice starting point...
 const defaultFocalPoint = [
-  1.9991999864578247,
-  -2.007040023803711,
-  0.15954573452472687,
+  1.9991999864578247, -2.007040023803711, 0.15954573452472687,
 ];
 
 const defaultPosition = [
-  4.109420299530029,
-  -3.632676601409912,
-  0.3706766664981842,
+  4.109420299530029, -3.632676601409912, 0.3706766664981842,
 ];
 
 const defaultViewUp = [0, 0, 1];
@@ -73,10 +69,12 @@ reader.setUrl(`${__BASE_PATH__}/data/elevation/dem.csv`).then(() => {
   renderWindow.render();
 });
 
-const keyboardManipulator = Manipulators.vtkKeyboardCameraManipulator.newInstance(
-  { movementSpeed: 0.02 }
-);
-const mouseManipulator = Manipulators.vtkMouseCameraTrackballFirstPersonManipulator.newInstance();
+const keyboardManipulator =
+  Manipulators.vtkKeyboardCameraManipulator.newInstance({
+    movementSpeed: 0.02,
+  });
+const mouseManipulator =
+  Manipulators.vtkMouseCameraTrackballFirstPersonManipulator.newInstance();
 
 const iStyle = vtkInteractorStyleManipulator.newInstance();
 iStyle.addKeyboardManipulator(keyboardManipulator);

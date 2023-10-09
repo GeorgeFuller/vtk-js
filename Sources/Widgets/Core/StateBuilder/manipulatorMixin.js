@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 // ----------------------------------------------------------------------------
 
@@ -7,24 +7,24 @@ function vtkManipulatorMixin(publicAPI, model) {
     if (model.manipulator) {
       const { origin, normal, direction } = model;
       const {
-        setOrigin,
-        setCenter,
-        setNormal,
-        setDirection,
+        setHandleOrigin,
+        setHandleCenter,
+        setHandleNormal,
+        setHandleDirection,
       } = model.manipulator;
 
-      if (origin && setOrigin) {
-        setOrigin(origin);
-      } else if (origin && setCenter) {
-        setCenter(origin);
+      if (origin && setHandleOrigin) {
+        setHandleOrigin(origin);
+      } else if (origin && setHandleCenter) {
+        setHandleCenter(origin);
       }
 
-      if (direction && setDirection) {
-        setDirection(direction);
-      } else if (direction && !normal && setNormal) {
-        setNormal(direction);
-      } else if (normal && setDirection) {
-        setDirection(normal);
+      if (direction && setHandleDirection) {
+        setHandleDirection(direction);
+      } else if (direction && !normal && setHandleNormal) {
+        setHandleNormal(direction);
+      } else if (normal && setHandleDirection) {
+        setHandleDirection(normal);
       }
     }
   };

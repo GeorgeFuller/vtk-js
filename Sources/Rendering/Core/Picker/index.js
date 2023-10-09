@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkAbstractPicker from 'vtk.js/Sources/Rendering/Core/AbstractPicker';
 import vtkBoundingBox from 'vtk.js/Sources/Common/DataModel/BoundingBox';
 import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
@@ -112,11 +112,14 @@ function vtkPicker(publicAPI, model) {
     const camera = renderer.getActiveCamera();
     cameraPos = camera.getPosition();
     cameraFP = camera.getFocalPoint();
+    const dims = view.getViewportSize(renderer);
+    const aspect = dims[0] / dims[1];
 
     displayCoords = renderer.worldToNormalizedDisplay(
       cameraFP[0],
       cameraFP[1],
-      cameraFP[2]
+      cameraFP[2],
+      aspect
     );
     displayCoords = view.normalizedDisplayToDisplay(
       displayCoords[0],
@@ -131,8 +134,6 @@ function vtkPicker(publicAPI, model) {
       selectionY,
       selectionZ
     );
-    const dims = view.getViewportSize(renderer);
-    const aspect = dims[0] / dims[1];
     worldCoords = renderer.normalizedDisplayToWorld(
       normalizedDisplay[0],
       normalizedDisplay[1],
@@ -234,7 +235,7 @@ function vtkPicker(publicAPI, model) {
     const scale = [];
     props.forEach((prop) => {
       const mapper = prop.getMapper();
-      pickable = prop.getPickable() && prop.getVisibility();
+      pickable = prop.getNestedPickable() && prop.getNestedVisibility();
       if (prop.getProperty().getOpacity() <= 0.0) {
         pickable = false;
       }

@@ -1,5 +1,5 @@
 import vtk from 'vtk.js/Sources/vtk';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import vtkPoints from 'vtk.js/Sources/Common/Core/Points';
 import { FieldDataTypes } from 'vtk.js/Sources/Common/DataModel/DataSet/Constants';
@@ -45,11 +45,14 @@ function vtkCalculator(publicAPI, model) {
     singleValueFormula,
     options = {}
   ) => ({
-    getArrays: () => ({
-      input: publicAPI.augmentInputArrays(
-        locn,
-        arrNames.map((x) => ({ location: locn, name: x }))
-      ),
+    getArrays: (inData) => ({
+      // don't augment input data array in case of structured input dataset
+      input: inData[0].isA('vtkImageData')
+        ? arrNames.map((x) => ({ location: locn, name: x }))
+        : publicAPI.augmentInputArrays(
+            locn,
+            arrNames.map((x) => ({ location: locn, name: x }))
+          ),
       output: [
         {
           location: locn,
@@ -191,7 +194,7 @@ function vtkCalculator(publicAPI, model) {
           [
             FieldDataTypes.POINT,
             (x) => x.getPointData(),
-            (x) => x.getPoints().getNumberOfPoints(),
+            (x) => x.getNumberOfPoints(),
           ],
           [
             FieldDataTypes.CELL,

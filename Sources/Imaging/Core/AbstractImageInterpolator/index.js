@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import Constants from 'vtk.js/Sources/Imaging/Core/AbstractImageInterpolator/Constants';
 import { vtkInterpolationInfo } from './InterpolationInfo';
 
@@ -76,9 +76,8 @@ function vtkAbstractImageInterpolator(publicAPI, model) {
 
     model.interpolationInfo.scalarType = model.scalars.dataType;
     model.interpolationInfo.dataTypeSize = 1; // model.scalars.getElementComponentSize();
-    model.interpolationInfo.numberOfComponents = publicAPI.computeNumberOfComponents(
-      ncomp
-    );
+    model.interpolationInfo.numberOfComponents =
+      publicAPI.computeNumberOfComponents(ncomp);
 
     model.interpolationInfo.borderMode = model.borderMode;
     publicAPI.internalUpdate();

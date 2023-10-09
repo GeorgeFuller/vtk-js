@@ -18,6 +18,7 @@ module.exports = {
     root: '/vtk-js/',
     github: 'kitware/vtk-js',
     google_analytics: 'UA-90338862-1',
+    google_analytics_4: 'G-5XH2Z0Y9LQ',
   },
   parallelWebpack: {
     maxConcurrentWorkers: 2,
@@ -25,18 +26,18 @@ module.exports = {
     templatePath: path.resolve(
       path.join(__dirname, '../Utilities/ExampleRunner/template.html')
     ),
+    output: {
+      publicPath: '',
+    },
     plugins: [],
     rules: [
       `
-      { test: /\\.glsl$/i, loader: 'shader-loader' },
       {
         test: /\\.js$/,
+        exclude: /dist\\/esm/,
         use: [
           {
-            loader: 'babel-loader',
-            options: {
-              presets: [["@babel/preset-env", { useBuiltIns: false }]]
-            },
+            loader: 'babel-loader?cacheDirectory',
           },
         ],
       },
@@ -66,24 +67,19 @@ module.exports = {
       },
       {
         test: /\\.svg$/,
-        use: [{ loader: 'raw-loader' }],
+        type: 'asset/source',
       },
-      {
-        test: /\\.worker\\.js$/,
-        use: [
-          {
-            loader: 'worker-loader',
-            options: { inline: 'no-fallback' },
-          },
-        ],
-      },
-      { test: /\\.(png|jpg)$/, use: 'url-loader?limit=81920' },
+      { test: /\\.(png|jpg)$/, type: 'asset' },
       { test: /\\.html$/, loader: 'html-loader' },
       { test: /\\.cjson$/, loader: 'hson-loader' },
       { test: /\\.hson$/, loader: 'hson-loader' },
       `,
     ],
-    alias: ["'vtk.js': `${rootPath}`,"],
+    alias: [
+      "'vtk.js/Sources': `${rootPath}/dist/esm`,",
+      "'@kitware/vtk.js': `${rootPath}/dist/esm`,",
+      "'vtk.js': `${rootPath}`,",
+    ],
   },
   copy: [{ src: '../Data/*', dest: './build-tmp/public/data' }],
 };

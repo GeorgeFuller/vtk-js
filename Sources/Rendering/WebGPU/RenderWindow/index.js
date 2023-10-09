@@ -1,14 +1,13 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import { registerViewConstructor } from 'vtk.js/Sources/Rendering/Core/RenderWindow';
 import vtkForwardPass from 'vtk.js/Sources/Rendering/WebGPU/ForwardPass';
 import vtkWebGPUBuffer from 'vtk.js/Sources/Rendering/WebGPU/Buffer';
 import vtkWebGPUDevice from 'vtk.js/Sources/Rendering/WebGPU/Device';
 import vtkWebGPUHardwareSelector from 'vtk.js/Sources/Rendering/WebGPU/HardwareSelector';
-import vtkWebGPUSwapChain from 'vtk.js/Sources/Rendering/WebGPU/SwapChain';
 import vtkWebGPUViewNodeFactory from 'vtk.js/Sources/Rendering/WebGPU/ViewNodeFactory';
 import vtkRenderPass from 'vtk.js/Sources/Rendering/SceneGraph/RenderPass';
 import vtkRenderWindowViewNode from 'vtk.js/Sources/Rendering/SceneGraph/RenderWindowViewNode';
-// import { VtkDataTypes } from 'vtk.js/Sources/Common/Core/DataArray/Constants';
+import HalfFloat from 'vtk.js/Sources/Common/Core/HalfFloat';
 
 const { vtkErrorMacro } = macro;
 // const IS_CHROME = navigator.userAgent.indexOf('Chrome') !== -1;
@@ -67,13 +66,27 @@ function vtkWebGPURenderWindow(publicAPI, model) {
   publicAPI.onModified(updateWindow);
 
   publicAPI.recreateSwapChain = () => {
-    model.swapChain.releaseGraphicsResources();
-    if (!model.swapChain.getCreated()) {
-      model.swapChain.create(model.device, publicAPI);
-      // model.commandBufferIndexes.clear();
-      // model.commandBufferIndexes.resize(this->Swapchain->GetMaximumFramesInFlight(), -1);
+    if (model.context) {
+      model.context.unconfigure();
+      model.presentationFormat = navigator.gpu.getPreferredCanvasFormat(
+        model.adapter
+      );
+
+      /* eslint-disable no-undef */
+      /* eslint-disable no-bitwise */
+      model.context.configure({
+        device: model.device.getHandle(),
+        format: model.presentationFormat,
+        alphaMode: 'premultiplied',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
+        width: model.size[0],
+        height: model.size[1],
+      });
+      model._configured = true;
     }
   };
+
+  publicAPI.getCurrentTexture = () => model.context.getCurrentTexture();
 
   // Builds myself.
   publicAPI.buildPass = (prepass) => {
@@ -88,8 +101,8 @@ function vtkWebGPURenderWindow(publicAPI, model) {
 
       publicAPI.initialize();
     } else if (model.initialized) {
-      if (!model.swapChain.getCreated()) {
-        model.swapChain.create(model.device, publicAPI);
+      if (!model._configured) {
+        publicAPI.recreateSwapChain();
       }
       model.commandEncoder = model.device.createCommandEncoder();
     }
@@ -120,6 +133,9 @@ function vtkWebGPURenderWindow(publicAPI, model) {
 
       publicAPI.create3DContextAsync().then(() => {
         model.initialized = true;
+        if (model.deleted) {
+          return;
+        }
         publicAPI.invokeInitialized();
       });
     }
@@ -172,17 +188,35 @@ function vtkWebGPURenderWindow(publicAPI, model) {
 
   publicAPI.create3DContextAsync = async () => {
     // Get a GPU device to render with
-    model.adapter = await navigator.gpu.requestAdapter();
+    model.adapter = await navigator.gpu.requestAdapter({
+      powerPreference: 'high-performance',
+    });
+    if (model.deleted) {
+      return;
+    }
     // console.log([...model.adapter.features]);
     model.device = vtkWebGPUDevice.newInstance();
     model.device.initialize(await model.adapter.requestDevice());
-    model.context = model.canvas.getContext('gpupresent');
+    if (model.deleted) {
+      model.device = null;
+      return;
+    }
+    // model.device.getHandle().lost.then((info) => {
+    //   console.log(`${info.message}`);
+    //   publicAPI.releaseGraphicsResources();
+    // });
+    model.context = model.canvas.getContext('webgpu');
   };
 
-  publicAPI.restoreContext = () => {
+  publicAPI.releaseGraphicsResources = () => {
     const rp = vtkRenderPass.newInstance();
     rp.setCurrentOperation('Release');
     rp.traverse(publicAPI, null);
+    model.adapter = null;
+    model.device = null;
+    model.context = null;
+    model.initialized = false;
+    model.initializing = false;
   };
 
   publicAPI.setBackgroundImage = (img) => {
@@ -317,6 +351,8 @@ function vtkWebGPURenderWindow(publicAPI, model) {
           publicAPI.modified();
 
           if (resetCamera) {
+            const isUserResetCamera = resetCamera !== true;
+
             // If resetCamera was requested, we first save camera parameters
             // from all the renderers, so we can restore them later
             model._screenshot.cameras = model.renderable
@@ -330,7 +366,10 @@ function vtkWebGPURenderWindow(publicAPI, model) {
                 );
 
                 return {
-                  resetCameraFn: renderer.resetCamera,
+                  resetCameraArgs: isUserResetCamera ? { renderer } : undefined,
+                  resetCameraFn: isUserResetCamera
+                    ? resetCamera
+                    : renderer.resetCamera,
                   restoreParamsFn: camera.set,
                   // "clone" the params so we don't keep refs to properties
                   arg: JSON.parse(JSON.stringify(params)),
@@ -340,8 +379,9 @@ function vtkWebGPURenderWindow(publicAPI, model) {
             // Perform the resetCamera() on each renderer only after capturing
             // the params from all active cameras, in case there happen to be
             // linked cameras among the renderers.
-            model._screenshot.cameras.forEach(({ resetCameraFn }) =>
-              resetCameraFn()
+            model._screenshot.cameras.forEach(
+              ({ resetCameraFn, resetCameraArgs }) =>
+                resetCameraFn(resetCameraArgs)
             );
           }
 
@@ -353,9 +393,18 @@ function vtkWebGPURenderWindow(publicAPI, model) {
   };
 
   publicAPI.traverseAllPasses = () => {
+    if (model.deleted) {
+      return;
+    }
+    // if we are not initialized then we call initialize
+    // which is async so we will not actually get a render
+    // so we queue up another traverse for when we are initialized
     if (!model.initialized) {
       publicAPI.initialize();
-      publicAPI.onInitialized(publicAPI.traverseAllPasses);
+      const subscription = publicAPI.onInitialized(() => {
+        subscription.unsubscribe();
+        publicAPI.traverseAllPasses();
+      });
     } else {
       if (model.renderPasses) {
         for (let index = 0; index < model.renderPasses.length; ++index) {
@@ -429,9 +478,9 @@ function vtkWebGPURenderWindow(publicAPI, model) {
       height: texture.getHeight(),
     };
 
-    // must be a multiple of 256 bytes, so 64 texels with rgba8
-    result.colorBufferWidth = 64 * Math.floor((result.width + 63) / 64);
-    result.colorBufferSizeInBytes = result.colorBufferWidth * result.height * 4;
+    // must be a multiple of 256 bytes, so 32 texels with rgba16
+    result.colorBufferWidth = 32 * Math.floor((result.width + 31) / 32);
+    result.colorBufferSizeInBytes = result.colorBufferWidth * result.height * 8;
     const colorBuffer = vtkWebGPUBuffer.newInstance();
     colorBuffer.setDevice(device);
     /* eslint-disable no-bitwise */
@@ -450,7 +499,7 @@ function vtkWebGPURenderWindow(publicAPI, model) {
       },
       {
         buffer: colorBuffer.getHandle(),
-        bytesPerRow: 4 * result.colorBufferWidth,
+        bytesPerRow: 8 * result.colorBufferWidth,
         rowsPerImage: result.height,
       },
       {
@@ -466,9 +515,7 @@ function vtkWebGPURenderWindow(publicAPI, model) {
     await cLoad;
     /* eslint-enable no-undef */
 
-    result.colorValues = new Uint8ClampedArray(
-      colorBuffer.getMappedRange().slice()
-    );
+    result.colorValues = new Uint16Array(colorBuffer.getMappedRange().slice());
     colorBuffer.unmap();
     // repack the array
     const tmparray = new Uint8ClampedArray(result.height * result.width * 4);
@@ -476,14 +523,24 @@ function vtkWebGPURenderWindow(publicAPI, model) {
       for (let x = 0; x < result.width; x++) {
         const doffset = (y * result.width + x) * 4;
         const soffset = (y * result.colorBufferWidth + x) * 4;
-        tmparray[doffset] = result.colorValues[soffset + 2];
-        tmparray[doffset + 1] = result.colorValues[soffset + 1];
-        tmparray[doffset + 2] = result.colorValues[soffset];
-        tmparray[doffset + 3] = result.colorValues[soffset + 3];
+        tmparray[doffset] =
+          255.0 * HalfFloat.fromHalf(result.colorValues[soffset]);
+        tmparray[doffset + 1] =
+          255.0 * HalfFloat.fromHalf(result.colorValues[soffset + 1]);
+        tmparray[doffset + 2] =
+          255.0 * HalfFloat.fromHalf(result.colorValues[soffset + 2]);
+        tmparray[doffset + 3] =
+          255.0 * HalfFloat.fromHalf(result.colorValues[soffset + 3]);
       }
     }
     result.colorValues = tmparray;
     return result;
+  };
+
+  publicAPI.createSelector = () => {
+    const ret = vtkWebGPUHardwareSelector.newInstance();
+    ret.setWebGPURenderWindow(publicAPI);
+    return ret;
   };
 
   publicAPI.delete = macro.chain(publicAPI.delete, publicAPI.setViewStream);
@@ -499,7 +556,6 @@ const DEFAULT_VALUES = {
   adapter: null,
   device: null,
   canvas: null,
-  swapChain: null,
   cursorVisibility: true,
   cursor: 'pointer',
   containerSize: null,
@@ -509,6 +565,8 @@ const DEFAULT_VALUES = {
   useOffScreen: false,
   useBackgroundImage: false,
   nextPropID: 1,
+  xrSupported: false,
+  presentationFormat: null,
 };
 
 // ----------------------------------------------------------------------------
@@ -528,8 +586,6 @@ export function extend(publicAPI, model, initialValues = {}) {
   model.bgImage.style.width = '100%';
   model.bgImage.style.height = '100%';
   model.bgImage.style.zIndex = '-1';
-
-  model.swapChain = vtkWebGPUSwapChain.newInstance();
 
   // Inheritance
   vtkRenderWindowViewNode.extend(publicAPI, model, initialValues);
@@ -552,10 +608,11 @@ export function extend(publicAPI, model, initialValues = {}) {
 
   // Build VTK API
   macro.get(publicAPI, model, [
-    'swapChain',
     'commandEncoder',
     'device',
+    'presentationFormat',
     'useBackgroundImage',
+    'xrSupported',
   ]);
 
   macro.setGet(publicAPI, model, [

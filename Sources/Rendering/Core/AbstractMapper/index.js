@@ -1,32 +1,46 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 // ----------------------------------------------------------------------------
 // vtkAbstractMapper methods
 // ----------------------------------------------------------------------------
 
 function vtkAbstractMapper(publicAPI, model) {
+  model.classHierarchy.push('vtkAbstractMapper');
   publicAPI.update = () => {
     publicAPI.getInputData();
   };
 
   publicAPI.addClippingPlane = (plane) => {
-    if (plane.getClassName() !== 'vtkPlane') {
-      return;
+    if (!plane.isA('vtkPlane')) {
+      return false;
     }
-    model.clippingPlanes.push(plane);
+    if (!model.clippingPlanes.includes(plane)) {
+      model.clippingPlanes.push(plane);
+      publicAPI.modified();
+      return true;
+    }
+    return false;
   };
 
   publicAPI.getNumberOfClippingPlanes = () => model.clippingPlanes.length;
 
   publicAPI.removeAllClippingPlanes = () => {
+    if (model.clippingPlanes.length === 0) {
+      return false;
+    }
     model.clippingPlanes.length = 0;
+    publicAPI.modified();
+    return true;
   };
 
-  publicAPI.removeClippingPlane = (i) => {
-    if (i < 0 || i >= 6) {
-      return;
+  publicAPI.removeClippingPlane = (clippingPlane) => {
+    const i = model.clippingPlanes.indexOf(clippingPlane);
+    if (i === -1) {
+      return false;
     }
     model.clippingPlanes.splice(i, 1);
+    publicAPI.modified();
+    return true;
   };
 
   publicAPI.getClippingPlanes = () => model.clippingPlanes;
@@ -43,6 +57,36 @@ function vtkAbstractMapper(publicAPI, model) {
         publicAPI.addClippingPlane(planes[i]);
       }
     }
+  };
+
+  publicAPI.getClippingPlaneInDataCoords = (propMatrix, i, hnormal) => {
+    const clipPlanes = model.clippingPlanes;
+    const mat = propMatrix;
+
+    if (clipPlanes) {
+      const n = clipPlanes.length;
+      if (i >= 0 && i < n) {
+        // Get the plane
+        const plane = clipPlanes[i];
+        const normal = plane.getNormal();
+        const origin = plane.getOrigin();
+
+        // Compute the plane equation
+        const v1 = normal[0];
+        const v2 = normal[1];
+        const v3 = normal[2];
+        const v4 = -(v1 * origin[0] + v2 * origin[1] + v3 * origin[2]);
+
+        // Transform normal from world to data coords
+        hnormal[0] = v1 * mat[0] + v2 * mat[4] + v3 * mat[8] + v4 * mat[12];
+        hnormal[1] = v1 * mat[1] + v2 * mat[5] + v3 * mat[9] + v4 * mat[13];
+        hnormal[2] = v1 * mat[2] + v2 * mat[6] + v3 * mat[10] + v4 * mat[14];
+        hnormal[3] = v1 * mat[3] + v2 * mat[7] + v3 * mat[11] + v4 * mat[15];
+
+        return;
+      }
+    }
+    macro.vtkErrorMacro(`Clipping plane index ${i} is out of range.`);
   };
 }
 

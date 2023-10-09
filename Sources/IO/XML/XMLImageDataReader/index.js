@@ -1,5 +1,5 @@
 import vtkXMLReader from 'vtk.js/Sources/IO/XML/XMLReader';
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
 
 // ----------------------------------------------------------------------------
@@ -20,6 +20,10 @@ function vtkXMLImageDataReader(publicAPI, model) {
       .getAttribute('Spacing')
       .split(' ')
       .map((t) => Number(t));
+    const direction = imageDataElem
+      .getAttribute('Direction')
+      ?.split(' ')
+      .map((t) => Number(t));
     const pieces = imageDataElem.getElementsByTagName('Piece');
     const nbPieces = pieces.length;
 
@@ -30,7 +34,12 @@ function vtkXMLImageDataReader(publicAPI, model) {
         .getAttribute('Extent')
         .split(' ')
         .map((t) => Number(t));
-      const imageData = vtkImageData.newInstance({ origin, spacing, extent });
+      const imageData = vtkImageData.newInstance({
+        origin,
+        spacing,
+        direction,
+        extent,
+      });
 
       // Fill data
       vtkXMLReader.processFieldData(

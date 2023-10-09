@@ -15,9 +15,11 @@ const rootPath = path.resolve(path.join(__dirname, '../..'));
 program
   .option('-c, --config [file.js]', 'Configuration file')
   .option('--no-browser', 'Do not open the browser')
+  .option('--server-type <type>', 'Specify http (default) or self-signed https for serving examples', 'http')
   .parse(process.argv);
 
-var configFilePath = path.join(process.cwd(), program.config.replace(/\//g, path.sep));
+const options = program.opts();
+var configFilePath = path.join(process.cwd(), options.config.replace(/\//g, path.sep));
 var configuration = require(configFilePath);
 
 function getSplitedPath(filePath) {
@@ -92,7 +94,7 @@ if (configuration.examples) {
     const conf = buildConfig(exampleName, validPath(examples[exBasePath][exampleName]), distDir, validPath(rootPath), validPath(exBasePath));
     shell.ShellString(conf).to(webpackConfigPath);
     shell.cd(exBasePath);
-    shell.exec(`webpack serve --progress --config ${webpackConfigPath}`)
+    shell.exec(`webpack serve --server-type ${options.serverType} --progress --config ${webpackConfigPath}`)
   } else {
     console.log('=> To run an example:')
     console.log('  $ npm run example -- PUT_YOUR_EXAMPLE_NAME_HERE\n');

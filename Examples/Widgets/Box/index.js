@@ -1,10 +1,11 @@
-import 'vtk.js/Sources/favicon';
+import '@kitware/vtk.js/favicon';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import 'vtk.js/Sources/Rendering/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/Profiles/Glyph';
 
-import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-import vtkWidgetManager from 'vtk.js/Sources/Widgets/Core/WidgetManager';
+import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
+import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
 
 import vtkBoxWidget from './BoxWidget';
 import controlPanel from './controlPanel.html';
@@ -18,7 +19,7 @@ const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
 });
 const renderer = fullScreenRenderer.getRenderer();
 const renderWindow = fullScreenRenderer.getRenderWindow();
-const openGLRenderWindow = fullScreenRenderer.getOpenGLRenderWindow();
+const openGLRenderWindow = fullScreenRenderer.getApiSpecificRenderWindow();
 
 // ----------------------------------------------------------------------------
 // 2D overlay rendering
@@ -49,6 +50,7 @@ function widgetRegistration(e) {
   const action = e ? e.currentTarget.dataset.action : 'addWidget';
   const viewWidget = widgetManager[action](widget);
   if (viewWidget) {
+    viewWidget.setScaleInPixels(false);
     viewWidget.setDisplayCallback((coords) => {
       overlay.style.left = '-100px';
       if (coords) {

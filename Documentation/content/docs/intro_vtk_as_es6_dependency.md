@@ -1,7 +1,11 @@
-title: Using vtk.js as an ES6 dependency
+title: Using vtk.js as an ES dependency
 ---
 
 This guide illustrates how to consume vtk.js as an ES dependency.
+
+This document was last updated with the following package versions:
+- `@kitware/vtk.js@v28`
+- `webpack@v5`
 
 ## Starting a new vtk.js project
 
@@ -51,6 +55,12 @@ Furthermore, you no longer need to require and add `vtkRules` into your webpack 
   }
  }
 ```
+
+### ES5 Support
+
+`@kitware/vtk.js` targets ES6+, which means projects consuming `@kitware/vtk.js` must use babel, swc, or another transpiler to target ES5 output. If you are using existing frontend tooling such as vite or create-react-app, you are already covered.
+
+Adding ES5 support is out of the scope for this documentation. Instead, please visit [babel's documentation](https://babeljs.io/) or [SWC's documentation](https://swc.rs/) to get started.
 
 ## Using vtk.js
 
@@ -111,8 +121,8 @@ var cssRules = require('vtk.js/Utilities/config/dependency.js').webpack.css.rule
   module: {
     rules: [
         { test: /\.html$/, loader: 'html-loader' },
-        { test: /\.(png|jpg)$/, use: 'url-loader?limit=81920' },
-        { test: /\.svg$/, use: [{ loader: 'raw-loader' }] },
+        { test: /\.(png|jpg)$/, type: 'asset' },
+        { test: /\.svg$/, type: 'asset/source' },
     ].concat(vtkRules, cssRules),
   },
 
@@ -121,4 +131,4 @@ var cssRules = require('vtk.js/Utilities/config/dependency.js').webpack.css.rule
 
 Another possible issue is the fact that some relative import can not be resolved. In which case, you should copy those files to your local `./src/` directory and fix the actual import path.
 
-And if you didn't skip any piece you should be allset and ready to run that new code base.
+And if you didn't skip any piece you should be all set and ready to run that new code base.

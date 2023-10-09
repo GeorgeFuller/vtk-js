@@ -1,3 +1,5 @@
+import { quat } from 'gl-matrix';
+import { Vector3, Vector2, Nullable } from '../../../types';
 import vtkCell from '../Cell';
 
 export enum IntersectionState {
@@ -6,9 +8,11 @@ export enum IntersectionState {
 	ON_LINE,
 }
 
-interface ILineInitialValues { }
+export interface ILineInitialValues {
+	orientations: Nullable<quat[]>;
+}
 
-interface IIntersectWithLine {
+export interface IIntersectWithLine {
 	intersect: number;
 	t: number;
 	subId: number;
@@ -29,6 +33,18 @@ export interface vtkLine extends vtkCell {
 	getCellDimension(): number;
 
 	/**
+	 * Get the list of orientations (a list of quat) for each point of the line.
+	 * Can be null if the line is not oriented
+	 */
+	getOrientations(): Nullable<quat[]>;
+
+	/**
+	 * @see getOrientations
+	 * @param orientations The list of orientation per point of the centerline
+	 */
+	setOrientations(orientations: Nullable<quat[]>): boolean;
+
+	/**
 	 * Compute the intersection point of the intersection between line and line
 	 * defined by p1 and p2. tol Tolerance use for the position evaluation x is
 	 * the point which intersect triangle (computed in function) pcoords
@@ -42,25 +58,25 @@ export interface vtkLine extends vtkCell {
 	 *   t: tolerance of the intersection
 	 * }
 	 * ```
-	 * @param p1 
-	 * @param p2 
-	 * @param tol 
-	 * @param x 
-	 * @param pcoords 
-	 * @return {IIntersectWithLine} 
+	 * @param {Vector3} p1 The first point coordinate.
+	 * @param {Vector3} p2 The second point coordinate.
+	 * @param {Number} tol The tolerance to use.
+	 * @param {Vector3} x The point which intersect triangle.
+	 * @param {Vector3} pcoords The parametric coordinates.
 	 */
-	intersectWithLine(p1: number[], p2: number[], tol: number, x: number[], pcoords: number[]): IIntersectWithLine;
+	intersectWithLine(p1: Vector3, p2: Vector3, tol: number, x: Vector3, pcoords: Vector3): IIntersectWithLine;
 
 	/**
-	 * 
-	 * @param x 
-	 * @param closestPoint 
-	 * @param subId 
-	 * @param pcoords 
-	 * @param dist2 
-	 * @param weights 
+	 * Determine the global coordinates `x' and parametric coordinates `pcoords' in the cell.
 	 */
-	evaluatePosition(x: any, closestPoint: any, subId: any, pcoords: any, dist2: any, weights: any): void;
+	evaluateLocation(pcoords: Vector3, x: Vector3, weights: Vector2): void
+
+	/**
+	 * Determine the global orientation `q' and parametric coordinates `pcoords' in the cell.
+	 * Use slerp to interpolate orientation
+	 * Returns wether the orientation has been set in `q'
+	 */
+	evaluateOrientation(pcoords: Vector3, q: quat, weights: Vector2): boolean
 }
 
 /**
@@ -88,14 +104,14 @@ export function newInstance(initialValues?: ILineInitialValues): vtkLine;
  *   t: tolerance of the distance
  *   distance: quared distance between closest point and x
  * }
- * 
+ * ```
  * @static
- * @param {Number[]} x 
- * @param {Number[]} p1 
- * @param {Number[]} p2 
- * @param {Number[]} [closestPoint] 
+ * @param {Vector3} x 
+ * @param {Vector3} p1 
+ * @param {Vector3} p2 
+ * @param {Vector3} [closestPoint] 
  */
-export function distanceToLine(x: number[], p1: number[], p2: number[], closestPoint?: number[]): IDistanceToLine;
+export function distanceToLine(x: Vector3, p1: Vector3, p2: Vector3, closestPoint?: Vector3): IDistanceToLine;
 
 /**
  * Performs intersection of two finite 3D lines. An intersection is found if the
@@ -112,15 +128,16 @@ export function distanceToLine(x: number[], p1: number[], p2: number[], closestP
  *    YES_INTERSECTION,
  *    ON_LINE
  * }
+ * ```
  * @static
- * @param  {Number[]} a1 
- * @param {Number[]} a2 
- * @param {Number[]} b1 
- * @param {Number[]} b2 
- * @param {Number[]} u 
- * @param {Number[]} v 
+ * @param  {Vector3} a1 
+ * @param {Vector3} a2 
+ * @param {Vector3} b1 
+ * @param {Vector3} b2 
+ * @param {Vector3} u 
+ * @param {Vector3} v 
  */
-export function intersection(a1: number[], a2: number[], b1: number[], b2: number[], u: number[], v: number[]): IntersectionState;
+export function intersection(a1: Vector3, a2: Vector3, b1: Vector3, b2: Vector3, u: Vector3, v: Vector3): IntersectionState;
 
 /** 
  * vtkLine is a cell which representant a line.

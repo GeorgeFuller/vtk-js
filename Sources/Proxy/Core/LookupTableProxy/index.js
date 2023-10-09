@@ -1,4 +1,4 @@
-import macro from 'vtk.js/Sources/macro';
+import macro from 'vtk.js/Sources/macros';
 
 import vtkColorMaps from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction/ColorMaps';
 import vtkColorTransferFunction from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction';
@@ -160,5 +160,7 @@ function extend(publicAPI, model, initialValues = {}) {
 export const newInstance = macro.newInstance(extend, 'vtkLookupTableProxy');
 
 // ----------------------------------------------------------------------------
+
+export { Mode };
 
 export default { newInstance, extend, Mode, Defaults };
